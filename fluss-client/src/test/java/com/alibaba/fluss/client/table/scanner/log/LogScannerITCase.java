@@ -25,7 +25,7 @@ import com.alibaba.fluss.metadata.PhysicalTablePath;
 import com.alibaba.fluss.metadata.Schema;
 import com.alibaba.fluss.metadata.TableDescriptor;
 import com.alibaba.fluss.metadata.TablePath;
-import com.alibaba.fluss.record.RowKind;
+import com.alibaba.fluss.record.ChangeType;
 import com.alibaba.fluss.row.GenericRow;
 import com.alibaba.fluss.row.InternalRow;
 import com.alibaba.fluss.types.DataTypes;
@@ -74,7 +74,7 @@ public class LogScannerITCase extends ClientToServerITCaseBase {
             while (rowList.size() < recordSize) {
                 ScanRecords scanRecords = logScanner.poll(Duration.ofSeconds(1));
                 for (ScanRecord scanRecord : scanRecords) {
-                    assertThat(scanRecord.getRowKind()).isEqualTo(RowKind.APPEND_ONLY);
+                    assertThat(scanRecord.getChangeType()).isEqualTo(ChangeType.APPEND_ONLY);
                     InternalRow row = scanRecord.getRow();
                     rowList.add(row(row.getInt(0), row.getString(1)));
                 }
@@ -109,7 +109,7 @@ public class LogScannerITCase extends ClientToServerITCaseBase {
             while (rowList.size() < recordSize) {
                 ScanRecords scanRecords = logScanner.poll(Duration.ofSeconds(1));
                 for (ScanRecord scanRecord : scanRecords) {
-                    assertThat(scanRecord.getRowKind()).isEqualTo(RowKind.APPEND_ONLY);
+                    assertThat(scanRecord.getChangeType()).isEqualTo(ChangeType.APPEND_ONLY);
                     InternalRow row = scanRecord.getRow();
                     rowList.add(row(row.getInt(0), row.getString(1)));
                 }
@@ -148,7 +148,7 @@ public class LogScannerITCase extends ClientToServerITCaseBase {
             while (rowList.size() < recordSize) {
                 ScanRecords scanRecords = logScanner.poll(Duration.ofSeconds(1));
                 for (ScanRecord scanRecord : scanRecords) {
-                    assertThat(scanRecord.getRowKind()).isEqualTo(RowKind.APPEND_ONLY);
+                    assertThat(scanRecord.getChangeType()).isEqualTo(ChangeType.APPEND_ONLY);
                     InternalRow row = scanRecord.getRow();
                     rowList.add(row(row.getInt(0), row.getString(1)));
                 }
@@ -201,7 +201,7 @@ public class LogScannerITCase extends ClientToServerITCaseBase {
             while (scanned < recordSize) {
                 ScanRecords scanRecords = logScanner.poll(Duration.ofSeconds(1));
                 for (ScanRecord scanRecord : scanRecords) {
-                    assertThat(scanRecord.getRowKind()).isEqualTo(RowKind.APPEND_ONLY);
+                    assertThat(scanRecord.getChangeType()).isEqualTo(ChangeType.APPEND_ONLY);
                     assertThat(scanRecord.getRow().getString(0).getSizeInBytes()).isEqualTo(10);
                     assertThat(scanRecord.getRow().getLong(1)).isEqualTo(scanned);
                     assertThat(scanRecord.getRow().getString(2).getSizeInBytes()).isEqualTo(1000);
@@ -257,7 +257,7 @@ public class LogScannerITCase extends ClientToServerITCaseBase {
             while (scanned < recordSize) {
                 ScanRecords scanRecords = logScanner.poll(Duration.ofSeconds(1));
                 for (ScanRecord scanRecord : scanRecords) {
-                    assertThat(scanRecord.getRowKind()).isEqualTo(RowKind.INSERT);
+                    assertThat(scanRecord.getChangeType()).isEqualTo(ChangeType.INSERT);
                     assertThat(scanRecord.getRow().getString(0).getSizeInBytes()).isEqualTo(10);
                     assertThat(scanRecord.getRow().getLong(1)).isEqualTo(scanned);
                     assertThat(scanRecord.getRow().getString(2).getSizeInBytes()).isEqualTo(1000);
@@ -329,7 +329,7 @@ public class LogScannerITCase extends ClientToServerITCaseBase {
             while (rowList.size() < batchRecordSize) {
                 ScanRecords scanRecords = logScanner.poll(Duration.ofSeconds(1));
                 for (ScanRecord scanRecord : scanRecords) {
-                    assertThat(scanRecord.getRowKind()).isEqualTo(RowKind.APPEND_ONLY);
+                    assertThat(scanRecord.getChangeType()).isEqualTo(ChangeType.APPEND_ONLY);
                     InternalRow row = scanRecord.getRow();
                     rowList.add(row(row.getInt(0), row.getString(1)));
                 }
@@ -353,7 +353,7 @@ public class LogScannerITCase extends ClientToServerITCaseBase {
             while (rowList.size() < batchRecordSize) {
                 ScanRecords scanRecords = logScanner.poll(Duration.ofSeconds(1));
                 for (ScanRecord scanRecord : scanRecords) {
-                    assertThat(scanRecord.getRowKind()).isEqualTo(RowKind.APPEND_ONLY);
+                    assertThat(scanRecord.getChangeType()).isEqualTo(ChangeType.APPEND_ONLY);
                     InternalRow row = scanRecord.getRow();
                     rowList.add(row(row.getInt(0), row.getString(1)));
                 }
@@ -414,7 +414,7 @@ public class LogScannerITCase extends ClientToServerITCaseBase {
             while (rowList.size() < batchRecordSize) {
                 ScanRecords scanRecords = logScanner.poll(Duration.ofSeconds(1));
                 for (ScanRecord scanRecord : scanRecords) {
-                    assertThat(scanRecord.getRowKind()).isEqualTo(RowKind.APPEND_ONLY);
+                    assertThat(scanRecord.getChangeType()).isEqualTo(ChangeType.APPEND_ONLY);
                     InternalRow row = scanRecord.getRow();
                     rowList.add(row(row.getInt(0), row.getString(1)));
                 }
