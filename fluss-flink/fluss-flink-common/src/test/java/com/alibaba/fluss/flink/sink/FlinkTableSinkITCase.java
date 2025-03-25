@@ -382,6 +382,75 @@ class FlinkTableSinkITCase {
     }
 
     @Test
+    void testMultiPartialUpsert() throws Exception {
+        tEnv.executeSql(
+                "CREATE TABLE table_a(id int, order_split_flag int, PRIMARY KEY (id) NOT ENFORCED)");
+        tEnv.executeSql(
+                "CREATE TABLE table_b(id int, a_id int, inventory_num int, PRIMARY KEY (id) NOT ENFORCED)");
+        tEnv.executeSql(
+                "CREATE TABLE table_w(id int, order_split_flag int, inventory_num int, PRIMARY KEY (id) NOT ENFORCED)");
+
+        String insertQuery =
+                "EXECUTE STATEMENT SET BEGIN "
+                        + "INSERT INTO table_w(id,order_split_flag) SELECT id,order_split_flag FROM table_a; "
+                        + "INSERT INTO table_w(id,inventory_num) SELECT a_id,inventory_num FROM table_b WHERE inventory_num > 0; "
+                        + "END;";
+
+        System.out.println(tEnv.explainSql(insertQuery));
+        // Sink(table=[testcatalog.defaultdb.table_w], targetColumns=[[0],[1]], fields=[id,
+        // order_split_flag, EXPR$2])
+        // +- Calc(select=[id, order_split_flag, null:INTEGER AS EXPR$2])
+        //   +- DropUpdateBefore
+        //      +- TableSourceScan(table=[[testcatalog, defaultdb, table_a]], fields=[id,
+        // order_split_flag])
+        //
+        // Sink(table=[testcatalog.defaultdb.table_w], targetColumns=[[0],[2]], fields=[a_id,
+        // EXPR$1, inventory_num], upsertMaterialize=[true])
+        // +- Calc(select=[a_id, null:INTEGER AS EXPR$1, inventory_num], where=[(inventory_num >
+        // 0)])
+        //   +- TableSourceScan(table=[[testcatalog, defaultdb, table_b, filter=[], project=[a_id,
+        // inventory_num]]], fields=[a_id, inventory_num])
+
+        // tEnv.getConfig().set("table.exec.sink.upsert-materialize", "NONE");
+        // if we set the upsert-materialize to NONE, the plan will be:
+        // == Optimized Execution Plan ==
+        // Sink(table=[testcatalog.defaultdb.table_w], targetColumns=[[0],[1]], fields=[id,
+        // order_split_flag, EXPR$2])
+        // +- Calc(select=[id, order_split_flag, null:INTEGER AS EXPR$2])
+        //   +- DropUpdateBefore
+        //      +- TableSourceScan(table=[[testcatalog, defaultdb, table_a]], fields=[id,
+        // order_split_flag])
+        //
+        // Sink(table=[testcatalog.defaultdb.table_w], targetColumns=[[0],[2]], fields=[a_id,
+        // EXPR$1, inventory_num])
+        // +- Calc(select=[a_id, null:INTEGER AS EXPR$1, inventory_num], where=[(inventory_num >
+        // 0)])
+        //   +- TableSourceScan(table=[[testcatalog, defaultdb, table_b, filter=[], project=[a_id,
+        // inventory_num]]], fields=[a_id, inventory_num])
+
+        JobClient jobClient = tEnv.executeSql(insertQuery).getJobClient().get();
+
+        tEnv.executeSql("insert into table_a values(1, 1)").await();
+        tEnv.executeSql("insert into table_b values(1, 1, 10);").await();
+        tEnv.executeSql("insert into table_b values(2, 1, 20);").await();
+        tEnv.executeSql("insert into table_b values(2, 1, 0);").await();
+
+        CloseableIterator<Row> collect = tEnv.executeSql("SELECT * FROM table_w").collect();
+        List<String> expectedRows =
+                Arrays.asList(
+                        "+I[1, 1, null]",
+                        "-U[1, 1, null]",
+                        "+U[1, 1, 10]",
+                        "-U[1, 1, 10]",
+                        "+U[1, 1, 20]",
+                        "-U[1, 1, 20]",
+                        "+U[1, 1, null]");
+        assertResultsIgnoreOrder(collect, expectedRows, true);
+
+        jobClient.cancel().get();
+    }
+
+    @Test
     void testFirstRowMergeEngine() throws Exception {
         tEnv.executeSql(
                 "create table first_row_source (a int not null primary key not enforced,"
