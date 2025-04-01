@@ -116,5 +116,8 @@ class MetadataUpdaterTest {
         assertThat(metadataUpdater.getCluster().getAliveTabletServers())
                 .isEqualTo(newCluster.getAliveTabletServers())
                 .hasSize(1);
+
+        // recover the coordinator
+        FLUSS_CLUSTER_EXTENSION.startCoordinatorServer();
     }
 }
