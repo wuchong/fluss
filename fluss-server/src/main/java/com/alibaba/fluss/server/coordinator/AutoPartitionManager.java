@@ -165,8 +165,9 @@ public class AutoPartitionManager implements AutoCloseable {
                         lock,
                         () -> {
                             partitionsByTable.remove(tableId);
+                            autoCreateDayPartitionDelayMinutes.remove(tableId);
                             return autoPartitionTables.remove(tableId);
-                        autoCreateDayPartitionDelayMinutes.remove(tableId);});
+                        });
         if (tableInfo != null) {
             LOG.info(
                     "Removed auto partition table [{}] (id={}) from scheduler",
@@ -234,7 +235,6 @@ public class AutoPartitionManager implements AutoCloseable {
         LOG.info("Start auto partitioning for {} tables at {}.", tableIds.size(), now);
         for (Long tableId : tableIds) {
             Instant createPartitionInstant = now;
-            TableInfo tableInfo = autoPartitionTables.get(tableId);
             if (!forceDoAutoPartition) {
                 // not to force do auto partition and delay exist,
                 // we use now - delayMinutes as current instant to mock the delay
