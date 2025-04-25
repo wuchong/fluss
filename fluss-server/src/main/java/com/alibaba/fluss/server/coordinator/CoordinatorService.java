@@ -290,8 +290,6 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
         }
 
         CreatePartitionResponse response = new CreatePartitionResponse();
-        TableInfo tableInfo = metadataManager.getTable(tablePath);
-        if (!tableInfo.isPartitioned()) {
         TableRegistration table = metadataManager.getTableRegistration(tablePath);
         if (!table.isPartitioned()) {
             throw new TableNotPartitionedException(
@@ -333,7 +331,6 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
         }
 
         DropPartitionResponse response = new DropPartitionResponse();
-        TablePath tablePath = toTablePath(request.getTablePath());
         TableRegistration table = metadataManager.getTableRegistration(tablePath);
         if (!table.isPartitioned()) {
             throw new TableNotPartitionedException(
