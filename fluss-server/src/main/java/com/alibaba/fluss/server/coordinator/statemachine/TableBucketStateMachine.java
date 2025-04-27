@@ -168,12 +168,12 @@ public class TableBucketStateMachine {
         if (!checkValidTableBucketStateChange(tableBucket, targetState)) {
             return;
         }
+        BucketState currentState = coordinatorContext.getBucketState(tableBucket);
         switch (targetState) {
             case NewBucket:
                 doStateChange(tableBucket, targetState);
                 break;
             case OnlineBucket:
-                BucketState currentState = coordinatorContext.getBucketState(tableBucket);
                 String partitionName = null;
                 if (tableBucket.getPartitionId() != null) {
                     partitionName =
@@ -193,6 +193,7 @@ public class TableBucketStateMachine {
                             initLeaderForTableBuckets(tableBucket, assignedServers);
                     if (!optionalElectionResult.isPresent()) {
                         logFailedStateChange(tableBucket, currentState, targetState);
+                        return;
                     } else {
                         // transmit state
                         doStateChange(tableBucket, targetState);
@@ -214,6 +215,7 @@ public class TableBucketStateMachine {
                             electNewLeaderForTableBuckets(tableBucket);
                     if (!optionalElectionResult.isPresent()) {
                         logFailedStateChange(tableBucket, currentState, targetState);
+                        return;
                     } else {
                         // transmit state
                         doStateChange(tableBucket, targetState);
@@ -238,6 +240,7 @@ public class TableBucketStateMachine {
                 coordinatorContext.removeBucketState(tableBucket);
                 break;
         }
+        logSuccessfulStateChange(tableBucket, currentState, targetState);
     }
 
     private Optional<ElectionResult> initLeaderForTableBuckets(
@@ -373,6 +376,15 @@ public class TableBucketStateMachine {
             TableBucket tableBucket, BucketState currState, BucketState targetState) {
         LOG.error(
                 "Fail to change state for table bucket {} from {} to {}.",
+                stringifyBucket(tableBucket),
+                currState,
+                targetState);
+    }
+
+    private void logSuccessfulStateChange(
+            TableBucket tableBucket, BucketState currState, BucketState targetState) {
+        LOG.debug(
+                "Successfully changed state for table bucket {} from {} to {}.",
                 stringifyBucket(tableBucket),
                 currState,
                 targetState);

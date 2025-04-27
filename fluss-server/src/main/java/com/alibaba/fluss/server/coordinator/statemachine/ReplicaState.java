@@ -44,12 +44,7 @@ public enum ReplicaState implements BaseState<ReplicaState> {
     OfflineReplica {
         @Override
         public Set<ReplicaState> getValidPreviousStates() {
-            return EnumSet.of(
-                    NewReplica,
-                    OnlineReplica,
-                    OfflineReplica,
-                    ReplicaDeletionStarted,
-                    ReplicaDeletionSuccessful);
+            return EnumSet.of(NewReplica, OnlineReplica, OfflineReplica);
         }
     },
     ReplicaDeletionStarted {

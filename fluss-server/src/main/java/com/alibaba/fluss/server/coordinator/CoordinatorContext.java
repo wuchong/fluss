@@ -309,12 +309,12 @@ public class CoordinatorContext {
         replicaStates.putIfAbsent(replica, state);
     }
 
-    public void putReplicaState(TableBucketReplica replica, ReplicaState state) {
-        replicaStates.put(replica, state);
+    public ReplicaState putReplicaState(TableBucketReplica replica, ReplicaState state) {
+        return replicaStates.put(replica, state);
     }
 
-    public void removeReplicaState(TableBucketReplica replica) {
-        replicaStates.remove(replica);
+    public ReplicaState removeReplicaState(TableBucketReplica replica) {
+        return replicaStates.remove(replica);
     }
 
     public Set<TableBucket> getAllBucketsForTable(long tableId) {
