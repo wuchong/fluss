@@ -33,7 +33,7 @@ import java.util.List;
 import static com.alibaba.fluss.utils.Preconditions.checkNotNull;
 
 /** {@link ChannelComputer} for flink {@link RowData}. */
-public class FlinkRowDataChannelComputer implements ChannelComputer<RowData> {
+public class FlinkRowDataChannelComputer<InputT> implements ChannelComputer<RowData> {
 
     private static final long serialVersionUID = 1L;
 

@@ -44,13 +44,13 @@ import static com.alibaba.fluss.flink.sink.FlinkStreamPartitioner.partition;
 import static com.alibaba.fluss.flink.utils.FlinkConversions.toFlussRowType;
 
 /** Flink sink for Fluss. */
-class FlinkSink implements Sink<RowData>, SupportsPreWriteTopology<RowData> {
+class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<InputT> {
 
     private static final long serialVersionUID = 1L;
 
-    private final SinkWriterBuilder<? extends FlinkSinkWriter> builder;
+    private final SinkWriterBuilder<? extends FlinkSinkWriter, InputT> builder;
 
-    FlinkSink(SinkWriterBuilder<? extends FlinkSinkWriter> builder) {
+    FlinkSink(SinkWriterBuilder<? extends FlinkSinkWriter, InputT> builder) {
         this.builder = builder;
     }
 
@@ -71,19 +71,20 @@ class FlinkSink implements Sink<RowData>, SupportsPreWriteTopology<RowData> {
     }
 
     @Override
-    public DataStream<RowData> addPreWriteTopology(DataStream<RowData> input) {
+    public DataStream<InputT> addPreWriteTopology(DataStream<InputT> input) {
         return builder.addPreWriteTopology(input);
     }
 
     @Internal
-    interface SinkWriterBuilder<W extends FlinkSinkWriter> extends Serializable {
+    interface SinkWriterBuilder<W extends FlinkSinkWriter, InputT> extends Serializable {
         W createWriter(MailboxExecutor mailboxExecutor);
 
-        DataStream<RowData> addPreWriteTopology(DataStream<RowData> input);
+        DataStream<InputT> addPreWriteTopology(DataStream<InputT> input);
     }
 
     @Internal
-    static class AppendSinkWriterBuilder implements SinkWriterBuilder<AppendSinkWriter> {
+    static class AppendSinkWriterBuilder<InputT>
+            implements SinkWriterBuilder<AppendSinkWriter, InputT> {
 
         private static final long serialVersionUID = 1L;
 
@@ -125,7 +126,7 @@ class FlinkSink implements Sink<RowData>, SupportsPreWriteTopology<RowData> {
         }
 
         @Override
-        public DataStream<RowData> addPreWriteTopology(DataStream<RowData> input) {
+        public DataStream<InputT> addPreWriteTopology(DataStream<InputT> input) {
             // For append only sink, we will do bucket shuffle only if bucket keys are not empty.
             if (!bucketKeys.isEmpty() && shuffleByBucketId) {
                 return partition(
@@ -144,7 +145,8 @@ class FlinkSink implements Sink<RowData>, SupportsPreWriteTopology<RowData> {
     }
 
     @Internal
-    static class UpsertSinkWriterBuilder implements SinkWriterBuilder<UpsertSinkWriter> {
+    static class UpsertSinkWriterBuilder<InputT>
+            implements SinkWriterBuilder<UpsertSinkWriter, InputT> {
 
         private static final long serialVersionUID = 1L;
 
@@ -194,7 +196,7 @@ class FlinkSink implements Sink<RowData>, SupportsPreWriteTopology<RowData> {
         }
 
         @Override
-        public DataStream<RowData> addPreWriteTopology(DataStream<RowData> input) {
+        public DataStream<InputT> addPreWriteTopology(DataStream<InputT> input) {
             return shuffleByBucketId
                     ? partition(
                             input,
