@@ -22,6 +22,7 @@ import com.alibaba.fluss.client.admin.Admin;
 import com.alibaba.fluss.config.ConfigOptions;
 import com.alibaba.fluss.config.Configuration;
 import com.alibaba.fluss.exception.NetworkException;
+import com.alibaba.fluss.flink.sink.serializer.RowSerializationSchema;
 import com.alibaba.fluss.flink.source.testutils.FlinkTestBase;
 import com.alibaba.fluss.metadata.DatabaseDescriptor;
 import com.alibaba.fluss.metadata.Schema;
@@ -206,7 +207,8 @@ public class FlinkSinkWriterTest extends FlinkTestBase {
                         new LogicalType[] {new IntType(), new CharType(10)},
                         new String[] {"id", "name"}),
                 false,
-                mailboxExecutor);
+                mailboxExecutor,
+                new RowSerializationSchema());
     }
 
     static class MockSinkWriterContext implements SinkWriter.Context {

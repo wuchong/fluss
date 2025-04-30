@@ -18,6 +18,7 @@ package com.alibaba.fluss.flink.sink;
 
 import com.alibaba.fluss.annotation.Internal;
 import com.alibaba.fluss.config.Configuration;
+import com.alibaba.fluss.flink.sink.serializer.FlussSerializationSchema;
 import com.alibaba.fluss.flink.sink.writer.AppendSinkWriter;
 import com.alibaba.fluss.flink.sink.writer.FlinkSinkWriter;
 import com.alibaba.fluss.flink.sink.writer.UpsertSinkWriter;
@@ -31,7 +32,6 @@ import org.apache.flink.api.connector.sink2.WriterInitContext;
 import org.apache.flink.runtime.metrics.groups.InternalSinkWriterMetricGroup;
 import org.apache.flink.streaming.api.connector.sink2.SupportsPreWriteTopology;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.RowType;
 
 import javax.annotation.Nullable;
@@ -44,7 +44,7 @@ import static com.alibaba.fluss.flink.sink.FlinkStreamPartitioner.partition;
 import static com.alibaba.fluss.flink.utils.FlinkConversions.toFlussRowType;
 
 /** Flink sink for Fluss. */
-class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<InputT> {
+class FlinkSink<InputT> implements Sink<InputT>, SupportsPreWriteTopology<InputT> {
 
     private static final long serialVersionUID = 1L;
 
@@ -56,17 +56,19 @@ class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<Input
 
     @Deprecated
     @Override
-    public SinkWriter<RowData> createWriter(InitContext context) throws IOException {
-
-        FlinkSinkWriter flinkSinkWriter = builder.createWriter(context.getMailboxExecutor());
+    public SinkWriter<InputT> createWriter(InitContext context) throws IOException {
+        FlinkSinkWriter<InputT> flinkSinkWriter =
+                builder.createWriter(context.getMailboxExecutor());
         flinkSinkWriter.initialize(InternalSinkWriterMetricGroup.wrap(context.metricGroup()));
         return flinkSinkWriter;
     }
 
     @Override
-    public SinkWriter<RowData> createWriter(WriterInitContext context) throws IOException {
-        FlinkSinkWriter flinkSinkWriter = builder.createWriter(context.getMailboxExecutor());
+    public SinkWriter<InputT> createWriter(WriterInitContext context) throws IOException {
+        FlinkSinkWriter<InputT> flinkSinkWriter =
+                builder.createWriter(context.getMailboxExecutor());
         flinkSinkWriter.initialize(InternalSinkWriterMetricGroup.wrap(context.metricGroup()));
+
         return flinkSinkWriter;
     }
 
@@ -97,6 +99,7 @@ class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<Input
         private final List<String> partitionKeys;
         private final @Nullable DataLakeFormat lakeFormat;
         private final boolean shuffleByBucketId;
+        private final FlussSerializationSchema<InputT> flussSerializationSchema;
 
         public AppendSinkWriterBuilder(
                 TablePath tablePath,
@@ -107,7 +110,8 @@ class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<Input
                 List<String> bucketKeys,
                 List<String> partitionKeys,
                 @Nullable DataLakeFormat lakeFormat,
-                boolean shuffleByBucketId) {
+                boolean shuffleByBucketId,
+                FlussSerializationSchema flussSerializationSchema) {
             this.tablePath = tablePath;
             this.flussConfig = flussConfig;
             this.tableRowType = tableRowType;
@@ -117,12 +121,18 @@ class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<Input
             this.partitionKeys = partitionKeys;
             this.lakeFormat = lakeFormat;
             this.shuffleByBucketId = shuffleByBucketId;
+            this.flussSerializationSchema = flussSerializationSchema;
         }
 
         @Override
         public AppendSinkWriter createWriter(MailboxExecutor mailboxExecutor) {
             return new AppendSinkWriter(
-                    tablePath, flussConfig, tableRowType, ignoreDelete, mailboxExecutor);
+                    tablePath,
+                    flussConfig,
+                    tableRowType,
+                    ignoreDelete,
+                    mailboxExecutor,
+                    flussSerializationSchema);
         }
 
         @Override
@@ -160,6 +170,7 @@ class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<Input
         private final List<String> partitionKeys;
         private final @Nullable DataLakeFormat lakeFormat;
         private final boolean shuffleByBucketId;
+        private final FlussSerializationSchema flussSerializationSchema;
 
         UpsertSinkWriterBuilder(
                 TablePath tablePath,
@@ -171,7 +182,8 @@ class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<Input
                 List<String> bucketKeys,
                 List<String> partitionKeys,
                 @Nullable DataLakeFormat lakeFormat,
-                boolean shuffleByBucketId) {
+                boolean shuffleByBucketId,
+                FlussSerializationSchema flussSerializationSchema) {
             this.tablePath = tablePath;
             this.flussConfig = flussConfig;
             this.tableRowType = tableRowType;
@@ -182,6 +194,7 @@ class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<Input
             this.partitionKeys = partitionKeys;
             this.lakeFormat = lakeFormat;
             this.shuffleByBucketId = shuffleByBucketId;
+            this.flussSerializationSchema = flussSerializationSchema;
         }
 
         @Override
@@ -192,7 +205,8 @@ class FlinkSink<InputT> implements Sink<RowData>, SupportsPreWriteTopology<Input
                     tableRowType,
                     targetColumnIndexes,
                     ignoreDelete,
-                    mailboxExecutor);
+                    mailboxExecutor,
+                    flussSerializationSchema);
         }
 
         @Override

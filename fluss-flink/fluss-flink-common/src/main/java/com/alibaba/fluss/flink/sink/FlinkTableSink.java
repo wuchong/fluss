@@ -17,6 +17,8 @@
 package com.alibaba.fluss.flink.sink;
 
 import com.alibaba.fluss.config.Configuration;
+import com.alibaba.fluss.flink.sink.serializer.FlussSerializationSchema;
+import com.alibaba.fluss.flink.sink.serializer.RowSerializationSchema;
 import com.alibaba.fluss.flink.sink.writer.FlinkSinkWriter;
 import com.alibaba.fluss.flink.utils.PushdownUtils;
 import com.alibaba.fluss.flink.utils.PushdownUtils.FieldEqual;
@@ -184,6 +186,8 @@ public class FlinkTableSink
     }
 
     private FlinkSink<RowData> getFlinkSink(int[] targetColumnIndexes) {
+        FlussSerializationSchema flussSerializationSchema = new RowSerializationSchema();
+
         FlinkSink.SinkWriterBuilder<? extends FlinkSinkWriter, RowData> flinkSinkWriterBuilder =
                 (primaryKeyIndexes.length > 0)
                         ? new FlinkSink.UpsertSinkWriterBuilder<>(
@@ -196,7 +200,8 @@ public class FlinkTableSink
                                 bucketKeys,
                                 partitionKeys,
                                 lakeFormat,
-                                shuffleByBucketId)
+                                shuffleByBucketId,
+                                flussSerializationSchema)
                         : new FlinkSink.AppendSinkWriterBuilder<>(
                                 tablePath,
                                 flussConfig,
@@ -206,7 +211,8 @@ public class FlinkTableSink
                                 bucketKeys,
                                 partitionKeys,
                                 lakeFormat,
-                                shuffleByBucketId);
+                                shuffleByBucketId,
+                                flussSerializationSchema);
 
         return new FlinkSink<>(flinkSinkWriterBuilder);
     }
