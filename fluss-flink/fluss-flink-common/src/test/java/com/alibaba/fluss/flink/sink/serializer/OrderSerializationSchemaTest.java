@@ -17,8 +17,8 @@
 package com.alibaba.fluss.flink.sink.serializer;
 
 import com.alibaba.fluss.flink.row.RowWithOp;
-import com.alibaba.fluss.row.InternalRow;
 import com.alibaba.fluss.flink.source.testutils.Order;
+import com.alibaba.fluss.row.InternalRow;
 import com.alibaba.fluss.types.BigIntType;
 import com.alibaba.fluss.types.DataField;
 import com.alibaba.fluss.types.IntType;
