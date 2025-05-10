@@ -17,10 +17,12 @@
 package com.alibaba.fluss.flink.sink.serializer;
 
 import com.alibaba.fluss.annotation.PublicEvolving;
+import com.alibaba.fluss.flink.common.Order;
+import com.alibaba.fluss.row.GenericRow;
+import com.alibaba.fluss.row.InternalRow;
 import com.alibaba.fluss.flink.source.testutils.Order;
 import com.alibaba.fluss.types.RowType;
 
-import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.StringData;
 
@@ -63,13 +65,13 @@ public class OrderSerializationSchema implements FlussSerializationSchema<Order>
     }
 
     @Override
-    public RowData serialize(Order order) throws Exception {
+    public InternalRow serialize(Order order) throws Exception {
         if (order == null) {
             return null;
         }
 
         // Create a new row with the same number of fields as the schema
-        GenericRowData rowData = new GenericRowData(rowType.getFieldCount());
+        GenericRow rowData = new GenericRow(4);
 
         // Set order fields directly, knowing their exact position and type
         rowData.setField(0, order.getOrderId());

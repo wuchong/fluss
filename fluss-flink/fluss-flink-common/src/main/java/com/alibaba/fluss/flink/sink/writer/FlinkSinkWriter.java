@@ -160,9 +160,11 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
     public void write(InputT inputValue, Context context) throws IOException, InterruptedException {
         checkAsyncException();
 
+        InternalRow internalRow = null;
         RowData value = null;
+
         try {
-            value = serializationSchema.serialize(inputValue);
+//            value = serializationSchema.serialize(inputValue);
         } catch (Exception e) {
             LOG.error(
                     "Failed to serialize input value of type '{}': {}",
@@ -176,7 +178,6 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
             return;
         }
 
-        InternalRow internalRow = sinkRow.replace(value);
         CompletableFuture<?> writeFuture = writeRow(value.getRowKind(), internalRow);
         writeFuture.whenComplete(
                 (ignored, throwable) -> {

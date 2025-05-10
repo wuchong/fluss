@@ -14,17 +14,25 @@
  *  limitations under the License.
  */
 
+
 package com.alibaba.fluss.flink.sink.serializer;
+import com.alibaba.fluss.flink.row.FlinkAsFlussRow;
+import com.alibaba.fluss.row.InternalRow;
 
 import org.apache.flink.table.data.RowData;
 
+
 /** Default implementation of RowDataConverter for RowData. */
 public class RowSerializationSchema implements FlussSerializationSchema<RowData> {
-    @Override
-    public void open(InitializationContext context) throws Exception {}
+    private FlinkAsFlussRow converter;
 
     @Override
-    public RowData serialize(RowData value) throws Exception {
-        return value;
+    public void open(InitializationContext context) throws Exception {
+        converter = new FlinkAsFlussRow();
     }
+
+    @Override
+    public InternalRow serialize(RowData value) throws Exception {
+        return converter.replace(value);
+  }
 }

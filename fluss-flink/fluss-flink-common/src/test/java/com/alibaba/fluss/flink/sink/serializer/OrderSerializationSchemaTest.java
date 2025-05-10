@@ -16,6 +16,7 @@
 
 package com.alibaba.fluss.flink.sink.serializer;
 
+import com.alibaba.fluss.row.InternalRow;
 import com.alibaba.fluss.flink.source.testutils.Order;
 import com.alibaba.fluss.types.BigIntType;
 import com.alibaba.fluss.types.DataField;
@@ -90,9 +91,9 @@ public class OrderSerializationSchemaTest {
 
         Order order = new Order(1001L, 5001L, 10, "A-12 Mumbai");
 
-        RowData result = serializer.serialize(order);
+        InternalRow result = serializer.serialize(order);
 
-        assertThat(result.getArity()).isEqualTo(4);
+        assertThat(result.getFieldCount()).isEqualTo(4);
         assertThat(result.getLong(0)).isEqualTo(1001L);
         assertThat(result.getLong(1)).isEqualTo(5001L);
         assertThat(result.getInt(2)).isEqualTo(10);
@@ -103,12 +104,12 @@ public class OrderSerializationSchemaTest {
     @Test
     public void testNullHandling() throws Exception {
 
-        RowData nullResult = serializer.serialize(null);
+        InternalRow nullResult = serializer.serialize(null);
         assertThat(nullResult).isNull();
 
         Order order = new Order(1002L, 5002L, 5, null);
 
-        RowData result = serializer.serialize(order);
+        InternalRow result = serializer.serialize(order);
         assertThat(result.getLong(0)).isEqualTo(1002L);
         assertThat(result.getLong(1)).isEqualTo(5002L);
         assertThat(result.getInt(2)).isEqualTo(5);
@@ -126,9 +127,9 @@ public class OrderSerializationSchemaTest {
 
         Order order = new Order(1003L, 5003L, 15, "1124 Rohtak");
 
-        RowData result = extendedSerializer.serialize(order);
+        InternalRow result = extendedSerializer.serialize(order);
 
-        assertThat(result.getArity()).isEqualTo(5);
+        assertThat(result.getFieldCount()).isEqualTo(5);
         assertThat(result.getLong(0)).isEqualTo(1003L);
         assertThat(result.getLong(1)).isEqualTo(5003L);
         assertThat(result.getInt(2)).isEqualTo(15);

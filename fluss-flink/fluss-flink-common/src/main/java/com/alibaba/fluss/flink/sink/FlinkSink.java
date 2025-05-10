@@ -19,6 +19,7 @@ package com.alibaba.fluss.flink.sink;
 import com.alibaba.fluss.annotation.Internal;
 import com.alibaba.fluss.config.Configuration;
 import com.alibaba.fluss.flink.sink.serializer.FlussSerializationSchema;
+import com.alibaba.fluss.flink.sink.serializer.RowSerializationSchema;
 import com.alibaba.fluss.flink.sink.writer.AppendSinkWriter;
 import com.alibaba.fluss.flink.sink.writer.FlinkSinkWriter;
 import com.alibaba.fluss.flink.sink.writer.UpsertSinkWriter;
@@ -146,7 +147,8 @@ class FlinkSink<InputT> implements Sink<InputT>, SupportsPreWriteTopology<InputT
                                 bucketKeys,
                                 partitionKeys,
                                 lakeFormat,
-                                numBucket),
+                                numBucket,
+                                new RowSerializationSchema()),
                         input.getParallelism());
             } else {
                 return input;
@@ -219,7 +221,8 @@ class FlinkSink<InputT> implements Sink<InputT>, SupportsPreWriteTopology<InputT
                                     bucketKeys,
                                     partitionKeys,
                                     lakeFormat,
-                                    numBucket),
+                                    numBucket,
+                                    new RowSerializationSchema()),
                             input.getParallelism())
                     : input;
         }
