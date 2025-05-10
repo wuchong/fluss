@@ -16,7 +16,6 @@
 
 package com.alibaba.fluss.flink.sink.serializer;
 
-import com.alibaba.fluss.flink.common.Order;
 import com.alibaba.fluss.flink.row.RowWithOp;
 import com.alibaba.fluss.row.InternalRow;
 import com.alibaba.fluss.flink.source.testutils.Order;
