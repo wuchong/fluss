@@ -19,6 +19,7 @@ package com.alibaba.fluss.flink.sink;
 import com.alibaba.fluss.annotation.VisibleForTesting;
 import com.alibaba.fluss.bucketing.BucketingFunction;
 import com.alibaba.fluss.client.table.getter.PartitionGetter;
+import com.alibaba.fluss.flink.row.RowWithOp;
 import com.alibaba.fluss.flink.sink.serializer.FlussSerializationSchema;
 import com.alibaba.fluss.metadata.DataLakeFormat;
 import com.alibaba.fluss.row.InternalRow;
@@ -43,7 +44,7 @@ public class FlinkRowDataChannelComputer<InputT> implements ChannelComputer<Inpu
     private final RowType flussRowType;
     private final List<String> bucketKeys;
     private final List<String> partitionKeys;
-    private final FlussSerializationSchema flusssSerializationSchema;
+    private final FlussSerializationSchema serializationSchema;
 
     private transient int numChannels;
     private transient BucketingFunction bucketingFunction;
@@ -57,13 +58,13 @@ public class FlinkRowDataChannelComputer<InputT> implements ChannelComputer<Inpu
             List<String> partitionKeys,
             @Nullable DataLakeFormat lakeFormat,
             int numBucket,
-            FlussSerializationSchema flusssSerializationSchema) {
+            FlussSerializationSchema serializationSchema) {
         this.flussRowType = flussRowType;
         this.bucketKeys = bucketKeys;
         this.partitionKeys = partitionKeys;
         this.lakeFormat = lakeFormat;
         this.numBucket = numBucket;
-        this.flusssSerializationSchema = flusssSerializationSchema;
+        this.serializationSchema = serializationSchema;
     }
 
     @Override
@@ -92,7 +93,9 @@ public class FlinkRowDataChannelComputer<InputT> implements ChannelComputer<Inpu
     @Override
     public int channel(InputT record) {
         try {
-            InternalRow row = flusssSerializationSchema.serialize(record);
+            RowWithOp<RowData> rowWithOp = serializationSchema.serialize(record);
+            InternalRow row = rowWithOp.getInternalRow();
+
             int bucketId = bucketingFunction.bucketing(bucketKeyEncoder.encodeKey(row), numBucket);
             if (!combineShuffleWithPartitionName) {
                 return ChannelComputer.select(bucketId, numChannels);
@@ -103,9 +106,9 @@ public class FlinkRowDataChannelComputer<InputT> implements ChannelComputer<Inpu
             }
         } catch (Exception e) {
             throw new RuntimeException(
-                    String.format("Failed to serialize record of type '%s' in FlinkRowDataChannelComputer: %s",
-                            record != null ? record.getClass().getName() : "null",
-                            e.getMessage()),
+                    String.format(
+                            "Failed to serialize record of type '%s' in FlinkRowDataChannelComputer: %s",
+                            record != null ? record.getClass().getName() : "null", e.getMessage()),
                     e);
         }
     }

@@ -19,7 +19,6 @@ package com.alibaba.fluss.flink.sink;
 import com.alibaba.fluss.annotation.Internal;
 import com.alibaba.fluss.config.Configuration;
 import com.alibaba.fluss.flink.sink.serializer.FlussSerializationSchema;
-import com.alibaba.fluss.flink.sink.serializer.RowSerializationSchema;
 import com.alibaba.fluss.flink.sink.writer.AppendSinkWriter;
 import com.alibaba.fluss.flink.sink.writer.FlinkSinkWriter;
 import com.alibaba.fluss.flink.sink.writer.UpsertSinkWriter;
@@ -69,7 +68,6 @@ class FlinkSink<InputT> implements Sink<InputT>, SupportsPreWriteTopology<InputT
         FlinkSinkWriter<InputT> flinkSinkWriter =
                 builder.createWriter(context.getMailboxExecutor());
         flinkSinkWriter.initialize(InternalSinkWriterMetricGroup.wrap(context.metricGroup()));
-
         return flinkSinkWriter;
     }
 
@@ -142,13 +140,13 @@ class FlinkSink<InputT> implements Sink<InputT>, SupportsPreWriteTopology<InputT
             if (!bucketKeys.isEmpty() && shuffleByBucketId) {
                 return partition(
                         input,
-                        new FlinkRowDataChannelComputer(
+                        new FlinkRowDataChannelComputer<>(
                                 toFlussRowType(tableRowType),
                                 bucketKeys,
                                 partitionKeys,
                                 lakeFormat,
                                 numBucket,
-                                new RowSerializationSchema()),
+                                flussSerializationSchema),
                         input.getParallelism());
             } else {
                 return input;
@@ -216,13 +214,13 @@ class FlinkSink<InputT> implements Sink<InputT>, SupportsPreWriteTopology<InputT
             return shuffleByBucketId
                     ? partition(
                             input,
-                            new FlinkRowDataChannelComputer(
+                            new FlinkRowDataChannelComputer<>(
                                     toFlussRowType(tableRowType),
                                     bucketKeys,
                                     partitionKeys,
                                     lakeFormat,
                                     numBucket,
-                                    new RowSerializationSchema()),
+                                    flussSerializationSchema),
                             input.getParallelism())
                     : input;
         }

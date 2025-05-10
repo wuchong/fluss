@@ -17,7 +17,6 @@
 package com.alibaba.fluss.flink.sink;
 
 import com.alibaba.fluss.config.Configuration;
-import com.alibaba.fluss.flink.sink.serializer.FlussSerializationSchema;
 import com.alibaba.fluss.flink.sink.serializer.RowSerializationSchema;
 import com.alibaba.fluss.flink.sink.writer.FlinkSinkWriter;
 import com.alibaba.fluss.flink.utils.PushdownUtils;
@@ -180,14 +179,17 @@ public class FlinkTableSink
             // else, it's full update, ignore the given target columns as we don't care the order
         }
 
-        FlinkSink<RowData> flinkSink = getFlinkSink(targetColumnIndexes);
+        FlinkSink<RowData> flinkSink = null;
+        try {
+            flinkSink = getFlinkSink(targetColumnIndexes);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         return SinkV2Provider.of(flinkSink);
     }
 
-    private FlinkSink<RowData> getFlinkSink(int[] targetColumnIndexes) {
-        FlussSerializationSchema flussSerializationSchema = new RowSerializationSchema();
-
+    private FlinkSink<RowData> getFlinkSink(int[] targetColumnIndexes) throws Exception {
         FlinkSink.SinkWriterBuilder<? extends FlinkSinkWriter, RowData> flinkSinkWriterBuilder =
                 (primaryKeyIndexes.length > 0)
                         ? new FlinkSink.UpsertSinkWriterBuilder<>(
@@ -201,7 +203,7 @@ public class FlinkTableSink
                                 partitionKeys,
                                 lakeFormat,
                                 shuffleByBucketId,
-                                flussSerializationSchema)
+                                new RowSerializationSchema())
                         : new FlinkSink.AppendSinkWriterBuilder<>(
                                 tablePath,
                                 flussConfig,
@@ -212,7 +214,7 @@ public class FlinkTableSink
                                 partitionKeys,
                                 lakeFormat,
                                 shuffleByBucketId,
-                                flussSerializationSchema);
+                                new RowSerializationSchema());
 
         return new FlinkSink<>(flinkSinkWriterBuilder);
     }

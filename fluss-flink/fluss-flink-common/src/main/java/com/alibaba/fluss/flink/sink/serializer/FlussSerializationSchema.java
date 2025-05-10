@@ -17,8 +17,8 @@
 package com.alibaba.fluss.flink.sink.serializer;
 
 import com.alibaba.fluss.annotation.PublicEvolving;
+import com.alibaba.fluss.flink.row.RowWithOp;
 import com.alibaba.fluss.metrics.groups.MetricGroup;
-import com.alibaba.fluss.row.InternalRow;
 import com.alibaba.fluss.types.RowType;
 
 import org.apache.flink.table.data.RowData;
@@ -52,7 +52,7 @@ public interface FlussSerializationSchema<T> extends Serializable {
      * @return The serialized RowData.
      * @throws Exception If the serialization fails.
      */
-    InternalRow serialize(T value) throws Exception;
+    RowWithOp<T> serialize(T value) throws Exception;
 
     /**
      * A contextual information provided for {@link #open(InitializationContext)} method. It can be

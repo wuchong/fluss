@@ -35,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 public class AppendSinkWriter<InputT> extends FlinkSinkWriter<InputT> {
 
     private transient AppendWriter appendWriter;
+    private FlussSerializationSchema<InputT> serializationSchema;
 
     public AppendSinkWriter(
             TablePath tablePath,
@@ -42,19 +43,21 @@ public class AppendSinkWriter<InputT> extends FlinkSinkWriter<InputT> {
             RowType tableRowType,
             boolean ignoreDelete,
             MailboxExecutor mailboxExecutor,
-            FlussSerializationSchema flussSerializationSchema) {
+            FlussSerializationSchema serializationSchema) {
         super(
                 tablePath,
                 flussConfig,
                 tableRowType,
                 ignoreDelete,
                 mailboxExecutor,
-                flussSerializationSchema);
+                serializationSchema);
+        this.serializationSchema = serializationSchema;
     }
 
     @Override
     public void initialize(SinkWriterMetricGroup metricGroup) {
         super.initialize(metricGroup);
+
         appendWriter = table.newAppend().createWriter();
         LOG.info("Finished opening Fluss {}.", this.getClass().getSimpleName());
     }

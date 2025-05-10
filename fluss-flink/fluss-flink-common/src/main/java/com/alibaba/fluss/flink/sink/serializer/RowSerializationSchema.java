@@ -14,13 +14,15 @@
  *  limitations under the License.
  */
 
-
 package com.alibaba.fluss.flink.sink.serializer;
+
 import com.alibaba.fluss.flink.row.FlinkAsFlussRow;
+import com.alibaba.fluss.flink.row.RowWithOp;
 import com.alibaba.fluss.row.InternalRow;
 
+import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.data.RowData;
-
+import org.apache.flink.types.RowKind;
 
 /** Default implementation of RowDataConverter for RowData. */
 public class RowSerializationSchema implements FlussSerializationSchema<RowData> {
@@ -28,11 +30,32 @@ public class RowSerializationSchema implements FlussSerializationSchema<RowData>
 
     @Override
     public void open(InitializationContext context) throws Exception {
-        converter = new FlinkAsFlussRow();
+        this.converter = new FlinkAsFlussRow();
     }
 
     @Override
-    public InternalRow serialize(RowData value) throws Exception {
-        return converter.replace(value);
-  }
+    public RowWithOp<RowData> serialize(RowData value) throws Exception {
+        if (this.converter == null) {
+            this.converter = new FlinkAsFlussRow();
+        }
+
+        InternalRow row = converter.replace(value);
+        RowWithOp<RowData> rowWithOp = new RowWithOp<>(row);
+        switch (value.getRowKind()) {
+            case INSERT:
+                rowWithOp.setRowKind(RowKind.INSERT);
+                return rowWithOp;
+            case UPDATE_BEFORE:
+                rowWithOp.setRowKind(RowKind.UPDATE_BEFORE);
+                return rowWithOp;
+            case UPDATE_AFTER:
+                rowWithOp.setRowKind(RowKind.UPDATE_AFTER);
+                return rowWithOp;
+            case DELETE:
+                rowWithOp.setRowKind(RowKind.DELETE);
+                return rowWithOp;
+            default:
+                throw new TableException("Unsupported message kind: " + value.getRowKind());
+        }
+    }
 }

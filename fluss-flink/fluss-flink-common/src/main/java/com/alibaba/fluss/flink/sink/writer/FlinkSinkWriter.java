@@ -24,6 +24,7 @@ import com.alibaba.fluss.client.table.writer.TableWriter;
 import com.alibaba.fluss.config.Configuration;
 import com.alibaba.fluss.flink.metrics.FlinkMetricRegistry;
 import com.alibaba.fluss.flink.row.FlinkAsFlussRow;
+import com.alibaba.fluss.flink.row.RowWithOp;
 import com.alibaba.fluss.flink.sink.serializer.FlussSerializationSchema;
 import com.alibaba.fluss.flink.utils.FlinkConversions;
 import com.alibaba.fluss.metadata.TableInfo;
@@ -39,7 +40,6 @@ import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.table.api.ValidationException;
-import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.UserCodeClassLoader;
@@ -125,22 +125,24 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
         sanityCheck(table.getTableInfo());
         sinkRow = new FlinkAsFlussRow();
 
+        com.alibaba.fluss.types.RowType rowType = table.getTableInfo().getRowType();
+
         try {
-            serializationSchema.open(
+            this.serializationSchema.open(
                     new FlussSerializationSchema.InitializationContext() {
                         @Override
                         public MetricGroup getMetricGroup() {
-                            return getMetricGroup();
+                            return (MetricGroup) metricGroup.getIOMetricGroup();
                         }
 
                         @Override
                         public UserCodeClassLoader getUserCodeClassLoader() {
-                            return getUserCodeClassLoader();
+                            return null; // TODO: add user code class loader here
                         }
 
                         @Override
                         public com.alibaba.fluss.types.RowType getRowSchema() {
-                            return getRowSchema();
+                            return rowType;
                         }
                     });
         } catch (Exception e) {
@@ -160,38 +162,37 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
     public void write(InputT inputValue, Context context) throws IOException, InterruptedException {
         checkAsyncException();
 
-        InternalRow internalRow = null;
-        RowData value = null;
-
         try {
-//            value = serializationSchema.serialize(inputValue);
+            RowWithOp rowWithOp = serializationSchema.serialize(inputValue);
+
+            InternalRow internalRow = rowWithOp.getInternalRow();
+            RowKind rowKind = rowWithOp.getRowKind();
+
+            if (ignoreDelete && (rowKind == RowKind.UPDATE_BEFORE || rowKind == RowKind.DELETE)) {
+                return;
+            }
+
+            CompletableFuture<?> writeFuture = writeRow(rowKind, internalRow);
+            writeFuture.whenComplete(
+                    (ignored, throwable) -> {
+                        if (throwable != null) {
+                            if (this.asyncWriterException == null) {
+                                this.asyncWriterException = throwable;
+                            }
+
+                            // Checking for exceptions from previous writes
+                            mailboxExecutor.execute(
+                                    this::checkAsyncException, "Update error metric");
+                        }
+                    });
+
+            numRecordsOutCounter.inc();
         } catch (Exception e) {
             LOG.error(
                     "Failed to serialize input value of type '{}': {}",
                     inputValue.getClass().getName(),
                     e.getMessage());
         }
-
-        if (ignoreDelete
-                && (value.getRowKind() == RowKind.UPDATE_BEFORE
-                        || value.getRowKind() == RowKind.DELETE)) {
-            return;
-        }
-
-        CompletableFuture<?> writeFuture = writeRow(value.getRowKind(), internalRow);
-        writeFuture.whenComplete(
-                (ignored, throwable) -> {
-                    if (throwable != null) {
-                        if (this.asyncWriterException == null) {
-                            this.asyncWriterException = throwable;
-                        }
-
-                        // Checking for exceptions from previous writes
-                        mailboxExecutor.execute(this::checkAsyncException, "Update error metric");
-                    }
-                });
-
-        numRecordsOutCounter.inc();
     }
 
     @Override
