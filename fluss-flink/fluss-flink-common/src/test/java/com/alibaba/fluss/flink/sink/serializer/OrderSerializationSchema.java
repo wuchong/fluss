@@ -19,11 +19,11 @@ package com.alibaba.fluss.flink.sink.serializer;
 import com.alibaba.fluss.annotation.PublicEvolving;
 import com.alibaba.fluss.flink.row.RowWithOp;
 import com.alibaba.fluss.flink.source.testutils.Order;
+import com.alibaba.fluss.row.BinaryString;
 import com.alibaba.fluss.row.GenericRow;
 import com.alibaba.fluss.types.RowType;
 
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.data.StringData;
 import org.apache.flink.types.RowKind;
 
 /**
@@ -67,11 +67,11 @@ public class OrderSerializationSchema implements FlussSerializationSchema<Order>
     @Override
     public RowWithOp serialize(Order order) throws Exception {
         if (order == null) {
-            return null;
+            return new RowWithOp(null, null);
         }
 
         // Create a new row with the same number of fields as the schema
-        GenericRow row = new GenericRow(4);
+        GenericRow row = new GenericRow(rowType.getFieldCount());
 
         // Set order fields directly, knowing their exact position and type
         row.setField(0, order.getOrderId());
@@ -81,7 +81,7 @@ public class OrderSerializationSchema implements FlussSerializationSchema<Order>
         // Convert String to StringData for Flink internal representation
         String address = order.getAddress();
         if (address != null) {
-            row.setField(3, StringData.fromString(address));
+            row.setField(3, BinaryString.fromString(address));
         } else {
             row.setField(3, null);
         }
