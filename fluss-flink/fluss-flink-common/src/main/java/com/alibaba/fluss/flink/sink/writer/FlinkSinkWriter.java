@@ -164,7 +164,7 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
         checkAsyncException();
 
         try {
-            RowWithOp rowWithOp = serializationSchema.serialize(inputValue);
+            RowWithOp<InputT> rowWithOp = serializationSchema.serialize(inputValue);
 
             InternalRow internalRow = rowWithOp.getInternalRow();
             RowKind rowKind = rowWithOp.getRowKind();
