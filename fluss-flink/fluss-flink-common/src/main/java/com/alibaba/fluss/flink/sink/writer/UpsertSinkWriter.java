@@ -20,6 +20,7 @@ import com.alibaba.fluss.client.table.writer.TableWriter;
 import com.alibaba.fluss.client.table.writer.Upsert;
 import com.alibaba.fluss.client.table.writer.UpsertWriter;
 import com.alibaba.fluss.config.Configuration;
+import com.alibaba.fluss.flink.row.OperationType;
 import com.alibaba.fluss.flink.sink.serializer.FlussSerializationSchema;
 import com.alibaba.fluss.metadata.TablePath;
 import com.alibaba.fluss.row.InternalRow;
@@ -27,7 +28,6 @@ import com.alibaba.fluss.row.InternalRow;
 import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.table.types.logical.RowType;
-import org.apache.flink.types.RowKind;
 import org.apache.flink.util.UserCodeClassLoader;
 
 import javax.annotation.Nullable;
@@ -45,15 +45,13 @@ public class UpsertSinkWriter<InputT> extends FlinkSinkWriter<InputT> {
             Configuration flussConfig,
             RowType tableRowType,
             @Nullable int[] targetColumnIndexes,
-            boolean ignoreDelete,
             MailboxExecutor mailboxExecutor,
-            FlussSerializationSchema flussSerializationSchema) {
+            FlussSerializationSchema<InputT> flussSerializationSchema) {
         super(
                 tablePath,
                 flussConfig,
                 tableRowType,
                 targetColumnIndexes,
-                ignoreDelete,
                 mailboxExecutor,
                 flussSerializationSchema);
     }
@@ -71,13 +69,13 @@ public class UpsertSinkWriter<InputT> extends FlinkSinkWriter<InputT> {
     }
 
     @Override
-    CompletableFuture<?> writeRow(RowKind rowKind, InternalRow internalRow) {
-        if (rowKind.equals(RowKind.INSERT) || rowKind.equals(RowKind.UPDATE_AFTER)) {
+    CompletableFuture<?> writeRow(OperationType opType, InternalRow internalRow) {
+        if (opType == OperationType.UPSERT) {
             return upsertWriter.upsert(internalRow);
-        } else if ((rowKind.equals(RowKind.DELETE) || rowKind.equals(RowKind.UPDATE_BEFORE))) {
+        } else if (opType == OperationType.DELETE) {
             return upsertWriter.delete(internalRow);
         } else {
-            throw new UnsupportedOperationException("Unsupported row kind: " + rowKind);
+            throw new UnsupportedOperationException("Unsupported operation type: " + opType);
         }
     }
 

@@ -52,7 +52,7 @@ public interface FlussSerializationSchema<T> extends Serializable {
      * @return The serialized RowData.
      * @throws Exception If the serialization fails.
      */
-    RowWithOp<T> serialize(T value) throws Exception;
+    RowWithOp serialize(T value) throws Exception;
 
     /**
      * A contextual information provided for {@link #open(InitializationContext)} method. It can be

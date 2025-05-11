@@ -44,7 +44,7 @@ public class FlinkRowDataChannelComputer<InputT> implements ChannelComputer<Inpu
     private final RowType flussRowType;
     private final List<String> bucketKeys;
     private final List<String> partitionKeys;
-    private final FlussSerializationSchema serializationSchema;
+    private final FlussSerializationSchema<InputT> serializationSchema;
 
     private transient int numChannels;
     private transient BucketingFunction bucketingFunction;
@@ -58,7 +58,7 @@ public class FlinkRowDataChannelComputer<InputT> implements ChannelComputer<Inpu
             List<String> partitionKeys,
             @Nullable DataLakeFormat lakeFormat,
             int numBucket,
-            FlussSerializationSchema serializationSchema) {
+            FlussSerializationSchema<InputT> serializationSchema) {
         this.flussRowType = flussRowType;
         this.bucketKeys = bucketKeys;
         this.partitionKeys = partitionKeys;
@@ -93,9 +93,8 @@ public class FlinkRowDataChannelComputer<InputT> implements ChannelComputer<Inpu
     @Override
     public int channel(InputT record) {
         try {
-            RowWithOp<RowData> rowWithOp = serializationSchema.serialize(record);
-            InternalRow row = rowWithOp.getInternalRow();
-
+            RowWithOp rowWithOp = serializationSchema.serialize(record);
+            InternalRow row = rowWithOp.getRow();
             int bucketId = bucketingFunction.bucketing(bucketKeyEncoder.encodeKey(row), numBucket);
             if (!combineShuffleWithPartitionName) {
                 return ChannelComputer.select(bucketId, numChannels);

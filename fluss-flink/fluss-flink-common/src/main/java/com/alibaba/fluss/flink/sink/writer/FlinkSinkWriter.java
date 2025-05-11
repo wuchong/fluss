@@ -23,7 +23,7 @@ import com.alibaba.fluss.client.table.Table;
 import com.alibaba.fluss.client.table.writer.TableWriter;
 import com.alibaba.fluss.config.Configuration;
 import com.alibaba.fluss.flink.metrics.FlinkMetricRegistry;
-import com.alibaba.fluss.flink.row.FlinkAsFlussRow;
+import com.alibaba.fluss.flink.row.OperationType;
 import com.alibaba.fluss.flink.row.RowWithOp;
 import com.alibaba.fluss.flink.sink.serializer.FlussSerializationSchema;
 import com.alibaba.fluss.flink.utils.FlinkConversions;
@@ -41,7 +41,6 @@ import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.types.logical.RowType;
-import org.apache.flink.types.RowKind;
 import org.apache.flink.util.UserCodeClassLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,11 +60,9 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
     private final Configuration flussConfig;
     protected final RowType tableRowType;
     protected final @Nullable int[] targetColumnIndexes;
-    private final boolean ignoreDelete;
     private final MailboxExecutor mailboxExecutor;
     private final FlussSerializationSchema<InputT> serializationSchema;
 
-    private transient FlinkAsFlussRow sinkRow;
     private transient Connection connection;
     protected transient Table table;
     protected transient FlinkMetricRegistry flinkMetricRegistry;
@@ -80,17 +77,9 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
             TablePath tablePath,
             Configuration flussConfig,
             RowType tableRowType,
-            boolean ignoreDelete,
             MailboxExecutor mailboxExecutor,
             FlussSerializationSchema<InputT> serializationSchema) {
-        this(
-                tablePath,
-                flussConfig,
-                tableRowType,
-                null,
-                ignoreDelete,
-                mailboxExecutor,
-                serializationSchema);
+        this(tablePath, flussConfig, tableRowType, null, mailboxExecutor, serializationSchema);
     }
 
     public FlinkSinkWriter(
@@ -98,14 +87,12 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
             Configuration flussConfig,
             RowType tableRowType,
             @Nullable int[] targetColumns,
-            boolean ignoreDelete,
             MailboxExecutor mailboxExecutor,
-            FlussSerializationSchema serializationSchema) {
+            FlussSerializationSchema<InputT> serializationSchema) {
         this.tablePath = tablePath;
         this.flussConfig = flussConfig;
         this.targetColumnIndexes = targetColumns;
         this.tableRowType = tableRowType;
-        this.ignoreDelete = ignoreDelete;
         this.mailboxExecutor = mailboxExecutor;
         this.serializationSchema = serializationSchema;
     }
@@ -124,7 +111,6 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
         connection = ConnectionFactory.createConnection(flussConfig, flinkMetricRegistry);
         table = connection.getTable(tablePath);
         sanityCheck(table.getTableInfo());
-        sinkRow = new FlinkAsFlussRow();
 
         com.alibaba.fluss.types.RowType rowType = table.getTableInfo().getRowType();
 
@@ -164,16 +150,14 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
         checkAsyncException();
 
         try {
-            RowWithOp<InputT> rowWithOp = serializationSchema.serialize(inputValue);
-
-            InternalRow internalRow = rowWithOp.getInternalRow();
-            RowKind rowKind = rowWithOp.getRowKind();
-
-            if (ignoreDelete && (rowKind == RowKind.UPDATE_BEFORE || rowKind == RowKind.DELETE)) {
+            RowWithOp rowWithOp = serializationSchema.serialize(inputValue);
+            OperationType opType = rowWithOp.getOperationType();
+            InternalRow row = rowWithOp.getRow();
+            if (opType == OperationType.IGNORE) {
+                // skip writing the row
                 return;
             }
-
-            CompletableFuture<?> writeFuture = writeRow(rowKind, internalRow);
+            CompletableFuture<?> writeFuture = writeRow(opType, row);
             writeFuture.whenComplete(
                     (ignored, throwable) -> {
                         if (throwable != null) {
@@ -199,7 +183,7 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
     @Override
     public abstract void flush(boolean endOfInput) throws IOException, InterruptedException;
 
-    abstract CompletableFuture<?> writeRow(RowKind rowKind, InternalRow internalRow);
+    abstract CompletableFuture<?> writeRow(OperationType opType, InternalRow internalRow);
 
     @Override
     public void close() throws Exception {

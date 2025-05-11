@@ -26,10 +26,8 @@ import org.apache.flink.table.data.DecimalData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.TimestampData;
 
-import java.io.Serializable;
-
 /** Wraps a Flink {@link RowData} as a Fluss {@link InternalRow}. */
-public class FlinkAsFlussRow implements InternalRow, Serializable {
+public class FlinkAsFlussRow implements InternalRow {
 
     private RowData flinkRow;
 

@@ -197,24 +197,22 @@ public class FlinkTableSink
                                 flussConfig,
                                 tableRowType,
                                 targetColumnIndexes,
-                                ignoreDelete,
                                 numBucket,
                                 bucketKeys,
                                 partitionKeys,
                                 lakeFormat,
                                 shuffleByBucketId,
-                                new RowSerializationSchema())
+                                new RowSerializationSchema(false, ignoreDelete))
                         : new FlinkSink.AppendSinkWriterBuilder<>(
                                 tablePath,
                                 flussConfig,
                                 tableRowType,
-                                ignoreDelete,
                                 numBucket,
                                 bucketKeys,
                                 partitionKeys,
                                 lakeFormat,
                                 shuffleByBucketId,
-                                new RowSerializationSchema());
+                                new RowSerializationSchema(true, ignoreDelete));
 
         return new FlinkSink<>(flinkSinkWriterBuilder);
     }
