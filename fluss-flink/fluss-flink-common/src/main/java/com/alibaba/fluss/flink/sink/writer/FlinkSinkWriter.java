@@ -82,7 +82,7 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
             RowType tableRowType,
             boolean ignoreDelete,
             MailboxExecutor mailboxExecutor,
-            FlussSerializationSchema serializationSchema) {
+            FlussSerializationSchema<InputT> serializationSchema) {
         this(
                 tablePath,
                 flussConfig,
@@ -110,7 +110,8 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
         this.serializationSchema = serializationSchema;
     }
 
-    public void initialize(SinkWriterMetricGroup metricGroup) {
+    public void initialize(
+            SinkWriterMetricGroup metricGroup, UserCodeClassLoader userCodeClassLoader) {
         LOG.info(
                 "Opening Fluss {}, database: {} and table: {}",
                 this.getClass().getSimpleName(),
@@ -137,7 +138,7 @@ public abstract class FlinkSinkWriter<InputT> implements SinkWriter<InputT> {
 
                         @Override
                         public UserCodeClassLoader getUserCodeClassLoader() {
-                            return null; // TODO: add user code class loader here
+                            return userCodeClassLoader;
                         }
 
                         @Override

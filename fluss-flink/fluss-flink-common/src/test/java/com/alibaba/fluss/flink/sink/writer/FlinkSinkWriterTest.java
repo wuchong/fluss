@@ -88,7 +88,9 @@ public class FlinkSinkWriterTest extends FlinkTestBase {
         FlinkSinkWriter flinkSinkWriter =
                 createSinkWriter(flussConf, mockWriterInitContext.getMailboxExecutor());
 
-        flinkSinkWriter.initialize(mockWriterInitContext.metricGroup());
+        flinkSinkWriter.initialize(
+                mockWriterInitContext.metricGroup(),
+                mockWriterInitContext.getUserCodeClassLoader());
         flinkSinkWriter.write(
                 GenericRowData.of(1, StringData.fromString("a")), new MockSinkWriterContext());
         flinkSinkWriter.flush(false);
@@ -188,7 +190,9 @@ public class FlinkSinkWriterTest extends FlinkTestBase {
             // test fluss unavailable.
             try (FlinkSinkWriter writer =
                     createSinkWriter(clientConfig, mockWriterInitContext.getMailboxExecutor())) {
-                writer.initialize(mockWriterInitContext.metricGroup());
+                writer.initialize(
+                        mockWriterInitContext.metricGroup(),
+                        mockWriterInitContext.getUserCodeClassLoader());
                 flussClusterExtension.close();
                 writer.write(
                         GenericRowData.of(1, StringData.fromString("a")),

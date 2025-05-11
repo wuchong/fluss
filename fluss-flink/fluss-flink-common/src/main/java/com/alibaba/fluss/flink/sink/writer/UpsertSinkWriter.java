@@ -28,6 +28,7 @@ import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.types.RowKind;
+import org.apache.flink.util.UserCodeClassLoader;
 
 import javax.annotation.Nullable;
 
@@ -58,8 +59,9 @@ public class UpsertSinkWriter<InputT> extends FlinkSinkWriter<InputT> {
     }
 
     @Override
-    public void initialize(SinkWriterMetricGroup metricGroup) {
-        super.initialize(metricGroup);
+    public void initialize(
+            SinkWriterMetricGroup metricGroup, UserCodeClassLoader userCodeClassLoader) {
+        super.initialize(metricGroup, userCodeClassLoader);
         Upsert upsert = table.newUpsert();
         if (targetColumnIndexes != null) {
             upsert = upsert.partialUpdate(targetColumnIndexes);
