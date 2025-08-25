@@ -450,6 +450,8 @@
             <properties>
                 <target.java.version>1.8</target.java.version>
                 <skip.on.java8>true</skip.on.java8>
+                <!-- The spotless version that is compatible with Java8 -->
+                <spotless.version>2.27.1</spotless.version>
             </properties>
             <build>
                 <plugins>
