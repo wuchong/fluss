@@ -41,4 +41,5 @@ website/package-lock.json
 website/versioned_docs
 website/versioned_sidebars
 website/versions.json
+website/docs-versions.json
 website/pnpm-lock.yaml

@@ -91,6 +91,9 @@ sidebar_json='{
  ]
 }'
 
+# initialize docs_versions.json array
+docs_versions_json="["
+
 # handle OS-specific cp command
 if [ "$(uname)" == "Darwin" ]; then
   CP_CMD="cp -R website/docs/ "
@@ -113,6 +116,15 @@ for branch in $branches; do
   echo "$sidebar_json" > "$version_sidebar_file" || { echo "Failed to generate sidebar file for version '$version'"; continue; }
   echo "Generated sidebar file for version '$version': $version_sidebar_file"
 
+  version_file="website/CURRENT_VERSION.json"
+  if [ -f "$version_file" ]; then
+    version_info=$(cat "$version_file" | tr -d '\n')
+    docs_versions_json+="$version_info, "
+  else
+    echo "The CURRENT_VERSION.json file does not exist in branch '$clean_branch_name', skipping..."
+    exit -1
+  fi
+
   # Check if the website/docs directory exists
   if [ -d "website/docs" ]; then
     # Create the target subdirectory (named after the branch)
@@ -126,6 +138,11 @@ for branch in $branches; do
     echo "The website/docs directory does not exist in branch '$clean_branch_name', skipping..."
   fi
 done
+
+# Remove the last comma and space, and close the JSON array
+docs_versions_json="${docs_versions_json%, }]"
+echo "$docs_versions_json" > "$SCRIPT_PATH/docs-versions.json"
+echo "Generated docs-versions.json file at $SCRIPT_PATH/docs-versions.json"
 
 # Clean up the temporary directory
 echo "Cleaning up temporary directory: $TEMP_DIR"
