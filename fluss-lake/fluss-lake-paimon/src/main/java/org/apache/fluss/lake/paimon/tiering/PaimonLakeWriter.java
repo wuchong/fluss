@@ -57,6 +57,13 @@ public class PaimonLakeWriter implements LakeWriter<PaimonWriteResult>, Supports
         // Overriding on an Unaware Bucket table (BUCKET = -1) would change its bucket mode.
         // The context always resolves the actual bucket count.
         // 中文解释：仅固定桶模式覆盖 writer 视图的桶数；无分桶键表保持 unaware 模式，不能用正数把其模式改掉。
+        // REVIEW [F001][P1]: 历史分区回写沿用自身桶布局，导致 Paimon 主键数据重复。
+        // REVIEW [F001][P1]: 历史分区在桶数为 2 时创建，ALTER 后的新普通分区按 4 桶写入并完成 tiering。
+        // REVIEW [F001][P1]: 该普通分区过期后，迟到更新被客户端按历史分区的 2 桶路由；这里又将 Paimon writer 的桶数覆盖为 2，而
+        // REVIEW [F001][P1]: MergeTreeWriter 仍直接使用历史 TableBucket 的 bucketId 写回原分区。
+        // REVIEW [F001][P1]: 最小复现中同一主键原来在 bucket 3/4，更新落到 bucket 1/2，提交成功后该分区 totalBuckets 为 [2,
+        // REVIEW [F001][P1]: 4]，行数由 1 变为 2。
+        // REVIEW [F001][P1]: 应按每条记录的原始湖分区解析实际桶数，并重新计算湖端 bucketId，不能将历史分区的物理路由直接用于湖写入。
         Integer bucketOverride =
                 !writerInitContext.tableInfo().getBucketKeys().isEmpty()
                         ? writerInitContext.bucketCount()

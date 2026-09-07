@@ -682,6 +682,13 @@ public class MetadataManager {
                         return;
                     }
                     // 中文解释：先更新湖默认值，再进入读取 ZK 版本及提交的阶段；湖失败可阻止 Fluss 提交，但两端操作并非同一事务。
+                    // REVIEW [F004][P2]: 并发 ALTER 可在成功返回后留下不同的 Fluss/Paimon 默认桶数。
+                    // REVIEW [F004][P2]: 两个客户端同时对同表 ALTER：A 将湖端改为 8 后暂停；B 将湖端及 ZK 改为 16 并成功返回；A
+                    // REVIEW [F004][P2]: 随后在 doAlterTablePropertiesOnce 中读取最新 ZK 版本并提交 8，也成功返回。
+                    // REVIEW [F004][P2]: 因为 CAS 快照在湖操作之后取得，它检测不到该交错。
+                    // REVIEW [F004][P2]: 使用临时 ZooKeeper 和带屏障的 LakeCatalog 替身已复现 Fluss=8、lake=16；再次
+                    // REVIEW [F004][P2]: ALTER=8 还会命中同值 no-op 而无法修复。
+                    // REVIEW [F004][P2]: 这破坏两端新分区的默认桶数一致性，应让同表的湖修改与 ZK 提交有统一的串行化/冲突恢复机制。
                     propagateBucketCountToLake(
                             tablePath, preAlterTableInfo, newBucketNum, flussPrincipal);
                 }

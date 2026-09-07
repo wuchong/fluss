@@ -251,6 +251,16 @@ public class TabletServerMetadataCache implements ServerMetadataCache {
                             long newEpoch = tableInfo.getBucketCountEpoch();
                             long currentEpoch = bucketCountEpochByTableId.getOrDefault(tableId, 0L);
                             // 中文解释：此处防止旧 epoch 回退本缓存中的表信息；Replica.tableInfo 的更新发生在另一条调用路径。
+                            // REVIEW [F005][P2]: epoch 防回退只保护缓存，没有保护 Replica.tableInfo。
+                            // REVIEW [F005][P2]: 旧 UpdateMetadata 延迟到达时，这里的 continue 只跳过缓存合并；
+                            // REVIEW [F005][P2]: ReplicaManager.maybeUpdateMetadataCache 仍将原始
+                            // REVIEW [F005][P2]: ClusterMetadata 传给 updateReplicaTableInfo，无条件更新副本。
+                            // REVIEW [F005][P2]: 连接重建后旧、新连接的工作队列可按不同次序处理消息。
+                            // REVIEW [F005][P2]: 最小复现依次输入 epoch 1 和 0 后，缓存保持 1，Replica.tableInfo
+                            // REVIEW [F005][P2]: 却变成 0。
+                            // REVIEW [F005][P2]: HistoricalLakeLookupManager 使用该 TableInfo 的 epoch
+                            // REVIEW [F005][P2]: 决定是否重算湖端 bucketId，因此已扩缩容表可能重新采用错误的直接路由并漏查。
+                            // REVIEW [F005][P2]: 应在缓存和副本应用元数据时统一执行版本校验。
                             if (newEpoch < currentEpoch) {
                                 continue;
                             }

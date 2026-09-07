@@ -100,6 +100,12 @@ public class LimitBatchScanner implements BatchScanner {
         }
 
         // 中文解释：LIMIT 请求从此快照读取布局；后面的分区刷新不会回填已构造请求中的缺失字段。
+        // REVIEW [F003][P2]: LIMIT 请求在元数据刷新前读取桶数。
+        // REVIEW [F003][P2]: 新连接尚未缓存分区元数据时，此处从旧 Cluster 填充请求字段，然后才调用 checkAndUpdateMetadata。
+        // REVIEW [F003][P2]: 即使刷新成功，已构造的请求仍不包含 routing_bucket_count；对已扩缩容的主键表会收到 STALE_METADATA，
+        // REVIEW [F003][P2]: pollBatch 随后抛出 IOException，且这里没有重试。
+        // REVIEW [F003][P2]: 最小复现确认刷新后的缓存已有桶数 2，而发出的请求 hasRoutingBucketCount=false。
+        // REVIEW [F003][P2]: 应先刷新，再取得 Cluster 并构造请求。
         Cluster cluster = metadataUpdater.getCluster();
         LimitScanRequest limitScanRequest =
                 new LimitScanRequest()
