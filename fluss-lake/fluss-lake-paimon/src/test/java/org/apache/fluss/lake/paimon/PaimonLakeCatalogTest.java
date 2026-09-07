@@ -582,6 +582,7 @@ class PaimonLakeCatalogTest {
 
     @Test
     void testUserFacingAlterTableStillRejectsBucketChange() throws Exception {
+        // 中文解释：对固定桶 Paimon 表分别提交用户 paimon.bucket 选项和 Fluss bucket.num，验证前者仍被拒绝、后者可经受控入口更新湖默认值。
         // The "bucket.num" SetOption is Fluss's trusted bucket-count propagation and is applied,
         // while any attempt to set Paimon's own bucket option directly through property change
         // keeps being rejected.

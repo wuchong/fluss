@@ -115,6 +115,7 @@ public class LookupClient {
             boolean insertIfNotExists,
             @Nullable String originalPartitionName,
             int bucketCount) {
+        // 中文解释：进入异步队列前同时保存目标桶与路由桶数，使后续合批和发送无需重新推断布局。
         LookupQuery lookup =
                 new LookupQuery(
                         tablePath,

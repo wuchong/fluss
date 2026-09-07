@@ -179,6 +179,7 @@ public final class KvBatchScanner implements BatchScanner {
                     "Leader for bucket " + bucket + " is not available. Please retry the scan.");
         }
 
+        // 中文解释：元数据更新和 leader 检查之后取快照，再为 KV 扫描附带该分区的路由桶数。
         Cluster cluster = metadataUpdater.getCluster();
         PbScanReqForBucket bucketReq =
                 new PbScanReqForBucket()

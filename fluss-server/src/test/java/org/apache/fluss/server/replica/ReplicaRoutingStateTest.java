@@ -62,6 +62,7 @@ final class ReplicaRoutingStateTest extends ReplicaTestBase {
 
     @Test
     void testRoutingBucketCountValidationAppliesOnlyToHashDistributedTables() throws Exception {
+        // 中文解释：组合旧 Coordinator 通知、无分桶键表和哈希表，验证激活需要通知中的路由桶数，路由校验只约束哈希表，且更新后的缓存 epoch 能拒绝旧客户端。
         TableBucket keylessTb = new TableBucket(DATA1_TABLE_ID, TEST_BUCKET);
 
         // A legacy coordinator's notification (no routing fields) fails leader activation loudly:
@@ -122,6 +123,7 @@ final class ReplicaRoutingStateTest extends ReplicaTestBase {
         replicaManager.validateRoutingBucketCount(keyedTb, 0);
         // ...but is rejected once an ALTER advances the metadata cache to epoch 1 through
         // UpdateMetadata, which does not re-notify the already active replica.
+        // 中文解释：只广播新表 epoch，不重新通知已激活副本；因此副本自身仍为 0，但校验必须采纳缓存中更新的 1。
         replicaManager.maybeUpdateMetadataCache(
                 INITIAL_COORDINATOR_EPOCH,
                 new ClusterMetadata(

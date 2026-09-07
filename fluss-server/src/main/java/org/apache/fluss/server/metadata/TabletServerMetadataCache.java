@@ -174,6 +174,7 @@ public class TabletServerMetadataCache implements ServerMetadataCache {
                     new ArrayList<>(snapshot.getBucketMetadataForPartition(partitionId).values());
             // prefer the explicit bucket count sent by the coordinator; the merged bucket
             // metadata list may be transiently partial during incremental updates
+            // 中文解释：优先返回 Coordinator 明确声明的桶数，避免增量消息只到达部分桶时误把列表长度当作完整布局。
             Integer bucketCount =
                     snapshot.getPartitionBucketCount(new TablePartition(tableId, partitionId));
             return Optional.of(
@@ -249,6 +250,7 @@ public class TabletServerMetadataCache implements ServerMetadataCache {
                             // layout (ALTER bucket.num) from replacing a newer one.
                             long newEpoch = tableInfo.getBucketCountEpoch();
                             long currentEpoch = bucketCountEpochByTableId.getOrDefault(tableId, 0L);
+                            // 中文解释：此处防止旧 epoch 回退本缓存中的表信息；Replica.tableInfo 的更新发生在另一条调用路径。
                             if (newEpoch < currentEpoch) {
                                 continue;
                             }
@@ -520,6 +522,7 @@ public class TabletServerMetadataCache implements ServerMetadataCache {
      * older versions do not send it; in that case the cache keeps no entry and readers fall back to
      * the merged bucket metadata size (see {@link #getPartitionMetadata}).
      */
+    // 中文解释：未携带布局的增量消息不覆盖已知值；分区删除时由删除分支清理对应布局缓存。
     private static void mergePartitionBucketCount(
             Map<TablePartition, Integer> partitionBucketCounts,
             long tableId,

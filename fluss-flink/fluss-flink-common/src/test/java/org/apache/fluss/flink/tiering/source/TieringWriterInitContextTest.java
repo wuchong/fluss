@@ -41,6 +41,7 @@ class TieringWriterInitContextTest {
 
     @Test
     void testIoTmpDir() {
+        // 中文解释：分别构造缺省和显式临时目录的上下文，验证新增桶数参数不会改变目录的透传及空值语义。
         TieringWriterInitContext defaultContext =
                 newContext(new TableBucket(TABLE_ID, 0), null, null, null);
         TieringWriterInitContext context =
@@ -56,6 +57,7 @@ class TieringWriterInitContextTest {
 
     @Test
     void testNonPartitionedFallsBackToTableLevelCount() {
+        // 中文解释：构造不带 partitionId 的非分区桶且不传分区桶数，验证上下文仍从表元数据取得桶数。
         // A non-partitioned bucket carries no per-partition count; the table-level count applies.
         TieringWriterInitContext context = newContext(new TableBucket(TABLE_ID, 0), null, null);
         assertThat(context.bucketCount()).isEqualTo(TABLE_BUCKET_COUNT);
@@ -63,6 +65,7 @@ class TieringWriterInitContextTest {
 
     @Test
     void testPartitionedUsesPerPartitionCount() {
+        // 中文解释：给分区上下文显式传入 4 桶，验证返回实际分区桶数而非表级默认值。
         // A partitioned bucket must use its own actual bucket count.
         TieringWriterInitContext context =
                 newContext(new TableBucket(TABLE_ID, 1L, 0), "2024-01", 4);
@@ -71,6 +74,7 @@ class TieringWriterInitContextTest {
 
     @Test
     void testPartitionedWithoutCountFailsLoud() {
+        // 中文解释：为带 partitionId 的上下文省略实际桶数，验证构造即失败，防止入湖 writer 猜测一个可能错误的布局。
         // A partitioned bucket with no resolved per-partition count must fail loudly rather than
         // silently guessing (which would corrupt the lake table's bucket layout).
         assertThatThrownBy(() -> newContext(new TableBucket(TABLE_ID, 1L, 0), "2024-01", null))

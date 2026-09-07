@@ -240,6 +240,7 @@ public class FlinkTestBase extends AbstractTestBase {
                             });
 
             // register partition assignments and metadata
+            // 中文解释：这个夹具直接注册分区，显式传入与生成 assignment 一致的桶数，模拟服务端创建后的持久化状态。
             zkClient.registerPartitionAssignmentAndMetadata(
                     partitionId,
                     partition,

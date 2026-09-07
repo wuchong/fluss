@@ -482,6 +482,7 @@ class PaimonTieringTest {
 
     @Test
     void testTieringStampsPartitionBucketCountAcrossRounds() throws Exception {
+        // 中文解释：湖表默认设为 8 桶，但旧分区显式固定为 4 桶；跨两轮新建 writer 并提交，检查文件桶数标记及累计行数都保持各自布局。
         // After ALTER bucket.num=8: files tiered for the "old" partition are stamped with its
         // actual count 4 (writer override) while the "new" partition inherits the schema value 8;
         // a second tiering round passes Paimon's native bucket-count check (historical 4 ==
@@ -514,6 +515,7 @@ class PaimonTieringTest {
 
         // two independent tiering rounds against the SAME partitions; each round creates fresh
         // writers and its own committer, exactly as TieringCommitOperator does
+        // 中文解释：每轮都重新创建 writer，第二轮会面对已有旧分区文件，可检验桶数标记是否随 writer 重建而改变。
         for (int round = 0; round < 2; round++) {
             List<PaimonWriteResult> paimonWriteResults = new ArrayList<>();
             // "old" partition: created before the ALTER, still routes by its original bucket count
@@ -547,6 +549,7 @@ class PaimonTieringTest {
         }
 
         // files of BOTH rounds carry each partition's actual bucket count
+        // 中文解释：同时检查文件的 totalBuckets 和实际行数，分别验证布局元数据正确及写入记录没有丢失。
         assertThat(totalBucketsOfPartition(tablePath, "old"))
                 .containsExactly(oldPartitionBucketCount);
         assertThat(totalBucketsOfPartition(tablePath, "new")).containsExactly(schemaBucketCount);
@@ -1087,6 +1090,7 @@ class PaimonTieringTest {
 
                     @Override
                     public int bucketCount() {
+                        // 中文解释：测试夹具允许省略分区桶数并使用表默认值；旧分区跨轮次用例显式传值，生产分区上下文则要求值存在。
                         return partitionBucketCount != null
                                 ? partitionBucketCount
                                 : tableInfo.getNumBuckets();

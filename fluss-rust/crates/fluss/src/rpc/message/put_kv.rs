@@ -52,6 +52,7 @@ impl PutKvRequest {
                 bucket_id: ready_batch.table_bucket.bucket_id(),
                 records: ready_batch.write_batch.build()?,
                 original_partition_name: None,
+                // 中文解释：当前 Rust 路径仍不发送路由桶数，保留旧请求形式；这没有实现扩缩容后的分区路由支持。
                 routing_bucket_count: None,
             })
         }

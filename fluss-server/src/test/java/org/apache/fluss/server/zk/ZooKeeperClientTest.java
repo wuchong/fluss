@@ -537,6 +537,7 @@ class ZooKeeperClientTest {
 
     @Test
     void testGetLatestBucketSnapshotsInBatch() throws Exception {
+        // 中文解释：组合有快照、路径缺失及空快照目录等桶状态，验证批量读取返回每桶最新快照或空值，并覆盖分区桶的同类读取。
         long tableId = 1L;
         TableBucket bucketWithSnapshots = new TableBucket(tableId, 0);
         TableBucket bucketWithoutPath = new TableBucket(tableId, 1);
@@ -701,6 +702,7 @@ class ZooKeeperClientTest {
 
     @Test
     void testPartition() throws Exception {
+        // 中文解释：注册两条分区元数据和 assignment，再列举、按名查询并删除其中一个，验证分区身份及列表维护正确。
         // first create a table
         TablePath tablePath = TablePath.of("db", "tb");
         long tableId = 12;

@@ -178,6 +178,7 @@ async def wait_for_table_ready(admin):
             except fluss.FlussError as e:
                 # Retriable means the table or partition is still initializing. A missing leader
                 # is a client-side error, which is never flagged retriable, so match it too.
+                # 中文解释：初始化等待优先识别结构化可重试错误；缺少 leader 是客户端异常，仍需单独识别，其他失败及时暴露。
                 if e.is_retriable or "No leader found" in str(e):
                     await asyncio.sleep(1)
                     continue

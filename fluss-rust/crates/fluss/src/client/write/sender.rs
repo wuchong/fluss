@@ -2105,6 +2105,7 @@ mod tests {
                                     created_time: 0,
                                     modified_time: 0,
                                     remote_data_dir: None,
+                                    // 中文解释：模拟 GetTableInfo 响应沿用旧服务端缺省 epoch，补齐结构体字段以保持原有表身份检查测试的场景。
                                     bucket_count_epoch: None,
                                 }
                                 .encode(&mut body)

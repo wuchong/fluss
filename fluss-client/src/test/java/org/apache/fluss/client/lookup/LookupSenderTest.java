@@ -601,6 +601,7 @@ public class LookupSenderTest {
 
     @Test
     void testLookupRequestCarriesPinnedRoutingBucketCount() throws Exception {
+        // 中文解释：把查询创建时的桶数固定为 4，捕获发送请求并校验该值原样进入协议；旧构造方式的 0 则保留字段缺省语义。
         // TOCTOU: the bucket count pinned at T1 (lookup time) must be carried to T2 (send time)
         // as the request's routing_bucket_count, not re-read from cluster metadata at T2.
         List<LookupRequest> receivedRequests = Collections.synchronizedList(new ArrayList<>());
@@ -626,6 +627,7 @@ public class LookupSenderTest {
 
         // A legacy query (bucketCount=0) must not set routing_bucket_count at all, letting
         // the server's epoch check decide.
+        // 中文解释：清空前一轮捕获结果后使用旧构造函数，单独验证缺省桶数不会被编码成一个看似有效的路由值。
         receivedRequests.clear();
         LookupQuery legacyQuery = new LookupQuery(DATA1_TABLE_PATH_PK, TABLE_BUCKET, bytes("key"));
         assertThat(legacyQuery.bucketCount()).isEqualTo(0);
@@ -638,6 +640,7 @@ public class LookupSenderTest {
 
     @Test
     void testPrefixLookupRequestCarriesPinnedRoutingBucketCount() throws Exception {
+        // 中文解释：构造携带 4 桶布局的前缀查询并捕获 RPC，验证前缀查询也传递路由时固定的桶数。
         // TOCTOU: same anchoring for prefix lookup path.
         List<PrefixLookupRequest> receivedRequests =
                 Collections.synchronizedList(new ArrayList<>());

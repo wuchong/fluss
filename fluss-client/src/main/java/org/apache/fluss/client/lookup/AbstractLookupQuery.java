@@ -39,6 +39,7 @@ public abstract class AbstractLookupQuery<T> {
      */
     private final @Nullable String originalPartitionName;
 
+    // 中文解释：查询排队前固定计算 bucketId 时使用的桶数，发送线程不得重新读取另一个时刻的默认值来解释该 bucketId。
     private final int bucketCount;
     private int retries;
     private long nextRetryTimeMs;

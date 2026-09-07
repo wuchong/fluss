@@ -211,6 +211,7 @@ final class SenderTest {
 
     @Test
     void testAbortsRerouteWhenQueuedBatchBucketCountDiffers() throws Exception {
+        // 中文解释：让已按 4 桶排队的批次遇到原分区删除，而历史分区只有 1 桶，验证批次失败且不会直接沿用旧 bucketId 向历史分区发送。
         sender.destroyResources();
         TableInfo tableInfo = createHistoricalTableInfo();
         PhysicalTablePath originalPath = PhysicalTablePath.of(tableInfo.getTablePath(), "20990101");
@@ -237,6 +238,7 @@ final class SenderTest {
         sender.runOnce();
 
         TestTabletServerGateway gateway = node1Gateway();
+        // 中文解释：用原分区未知错误驱动历史重路由分支；此时批次已按旧布局分桶，不能只替换 partitionId。
         gateway.response(
                 0, createPutKvResponse(originalBucket, Errors.UNKNOWN_TABLE_OR_BUCKET_EXCEPTION));
         sender.runOnce();
@@ -1516,6 +1518,7 @@ final class SenderTest {
 
     @Test
     void testStaleMetadataFailsBatchAndInvalidatesBucketAssigner() throws Exception {
+        // 中文解释：注入 STALE_METADATA 响应，验证发送器终止旧批次、失效桶路由及元数据缓存，并把异常交给写入回调。
         // Recreate sender with a tracking bucketAssignerInvalidator.
         IdempotenceManager idempotenceManager = createIdempotenceManager(false);
         Configuration conf = new Configuration();
@@ -1546,6 +1549,7 @@ final class SenderTest {
         assertThat(staleSender.numOfInFlightBatches(tb1)).isEqualTo(1);
 
         // Server rejects with STALE_METADATA — the bucketId was computed with a stale count.
+        // 中文解释：保存错误前的缓存实例，后面同时检查分桶器失效和 Cluster 被替换，覆盖路由重建需要的两份状态。
         Cluster clusterBeforeError = metadataUpdater.getCluster();
         finishRequest(tb1, 0, createProduceLogResponse(tb1, Errors.STALE_METADATA));
 
@@ -1567,6 +1571,7 @@ final class SenderTest {
 
     @Test
     void testStaleMetadataReclaimsBatchSequenceWhenIdempotenceEnabled() throws Exception {
+        // 中文解释：启用幂等写并分配序号 0 后注入写前路由拒绝，验证 writerId 保持有效且下次序号回到 0，防止留下序号空洞。
         // STALE_METADATA is only produced for hash-distributed tables (those with a bucket key; see
         // ReplicaManager#validateRoutingBucketCount), so exercise the client reclaim path on a
         // primary-key table bucket rather than a keyless one.
@@ -1589,6 +1594,7 @@ final class SenderTest {
 
         // The server rejects the batch during pre-append routing validation (STALE_METADATA), so it
         // was provably never written. Its batch sequence (0) must be reclaimed.
+        // 中文解释：此拒绝发生在服务端追加数据之前，因而允许回收已分配序号；它不等价于写入结果未知时重用序号。
         finishRequest(keyedBucket, 0, createPutKvResponse(keyedBucket, Errors.STALE_METADATA));
         staleSender.runOnce();
 

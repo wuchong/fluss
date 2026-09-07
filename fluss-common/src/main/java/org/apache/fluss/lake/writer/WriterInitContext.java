@@ -112,5 +112,6 @@ public interface WriterInitContext {
      * so lake writers must stamp bucket layouts with this value instead of the lake table's current
      * schema-level bucket setting.
      */
+    // 中文解释：writer 使用本次目标的实际桶数给文件标记布局；表默认值可能已经改变，不能替代旧分区的实际值。
     int bucketCount();
 }

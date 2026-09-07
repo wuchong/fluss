@@ -72,6 +72,7 @@ class PartitionRegistrationJsonSerdeTest extends JsonSerdeTestBase<PartitionRegi
 
     @Test
     void testBucketCountBackwardCompatibility() throws IOException {
+        // 中文解释：反序列化完全没有 bucket_count 的旧版 JSON，验证缺失值保留为 null，以便上层按表 epoch 决定兼容回退。
         // A v1 registration (written before per-partition bucket count existed) has no
         // bucket_count field. It must deserialize with a null bucketCount so that
         // callers fall back to the table-level bucket count.

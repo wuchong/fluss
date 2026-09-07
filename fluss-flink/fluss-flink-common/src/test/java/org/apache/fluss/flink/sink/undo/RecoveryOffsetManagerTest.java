@@ -807,6 +807,7 @@ public class RecoveryOffsetManagerTest {
 
     @Test
     void testCheckpointRecoveryEnumeratesPerPartitionBucketCount() throws Exception {
+        // 中文解释：为旧分区的 2 桶和新分区的 4 桶设置当前及 checkpoint offset，验证恢复决策只包含这 6 个真实桶。
         // Two partitions with different bucketCount: partition 1 has 2 buckets (old,
         // pre-ALTER), partition 2 has 4 buckets (new, post-ALTER). If getAllBuckets used the
         // table-level count for both, the old partition would spuriously enumerate buckets 2/3 or
@@ -835,6 +836,7 @@ public class RecoveryOffsetManagerTest {
                 new RecoveryOffsetManager(
                         admin, PRODUCER_ID, 0, 1, 10L, 5000L, TABLE_PATH, tableInfo);
 
+        // 中文解释：当前 offset 为 200、checkpoint 为 100，确保进入需要回退的恢复分支，而非已追平的无需恢复路径。
         Map<TableBucket, Long> chkOffsets = new HashMap<>();
         for (Map.Entry<TableBucket, Long> e : currentOffsets.entrySet()) {
             chkOffsets.put(e.getKey(), 100L);
@@ -864,6 +866,7 @@ public class RecoveryOffsetManagerTest {
 
     @Test
     void testProducerOffsetRegistrationUsesPerPartitionBucketCount() throws Exception {
+        // 中文解释：在没有恢复状态的首次启动中登记 producer offset，验证注册集合按各分区实际桶数枚举，不包含旧分区不存在的桶。
         // Empty checkpoint on Task0 → registerCurrentOffsets writes ALL buckets it enumerates.
         // fetchAllBucketOffsets must enumerate each partition using its own bucketCount so
         // the registered set is exactly the union of per-partition [0, bucketCount) ranges.
@@ -894,6 +897,7 @@ public class RecoveryOffsetManagerTest {
 
         // null recoveredState triggers producer-offset recovery on Task0, which internally calls
         // fetchAllBucketOffsets to build the registration map.
+        // 中文解释：传入 null 恢复状态触发首次注册分支，捕获 Admin 收到的桶集合以验证真实注册范围。
         manager.determineRecoveryStrategy(null);
 
         Map<TableBucket, Long> registered = admin.registeredOffsets;

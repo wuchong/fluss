@@ -251,6 +251,7 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
     private final boolean kvTableAllowCreation;
     private final Supplier<EventManager> eventManagerSupplier;
     private final Supplier<Integer> coordinatorEpochSupplier;
+    // 中文解释：传给 ZK 事务的是 Coordinator epoch 节点的版本，用于阻止已失去领导权的协调器提交元数据。
     private final Supplier<Integer> coordinatorEpochZkVersionSupplier;
     private final CoordinatorMetadataCache metadataCache;
 
@@ -875,6 +876,7 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
         TablePath tablePath = toTablePath(request.getTablePath());
         authorizeTable(OperationType.WRITE, tablePath);
 
+        // 中文解释：创建时读取当前表默认桶数，并让 assignment 与分区注册携带同一值；后续 ALTER 不改这个分区的已有布局。
         CreatePartitionResponse response = new CreatePartitionResponse();
         // The table metadata (including bucket.num) is read fresh here, and the partition's
         // registration persists its assignment and bucket count atomically in one ZK transaction

@@ -397,6 +397,7 @@ public class FlussAdmin implements Admin {
                 .listPartitionInfos(request)
                 .thenCompose(
                         response -> {
+                            // 中文解释：新响应已有每分区实际值时不再额外查询表；只有字段缺失时才检查表 epoch 是否允许兼容回退。
                             boolean allHaveBucketCount =
                                     response.getPartitionsInfosList().stream()
                                             .allMatch(PbPartitionInfo::hasBucketCount);
@@ -592,6 +593,7 @@ public class FlussAdmin implements Admin {
             } else {
                 partitionInfos = Collections.singletonList(null);
             }
+            // 中文解释：统计范围取各分区自己的桶集合，旧分区无需增加到新默认桶数，否则会向不存在的桶发请求。
             List<TableBucket> tableBuckets = new ArrayList<>();
             for (PartitionInfo partitionInfo : partitionInfos) {
                 int bucketCount =

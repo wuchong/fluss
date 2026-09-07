@@ -76,6 +76,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
 
     @Test
     void testUnionReadAcrossPartitionsWithDifferentBucketCounts() throws Exception {
+        // 中文解释：让扩容前后的日志分区先入湖，再停止 tiering 并追加 Fluss 数据，验证纯湖、混合和分区过滤读取均返回完整记录。
         String tableName = "rescale_bucket_log_table";
         TablePath tablePath = TablePath.of(DEFAULT_DB, tableName);
         createPartitionedLogTable(tablePath, OLD_BUCKET_NUM);
@@ -121,6 +122,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
         }
 
         // write more rows after tiering stopped so union read mixes lake splits and fluss log
+        // 中文解释：tiering 作业已停止，新增记录只能留在 Fluss，因此这次查询必须真正合并湖快照与 Fluss 尾部。
         expectedRows.addAll(writeRows(tablePath, "old", RECORDS_PER_ROUND));
         expectedRows.addAll(writeRows(tablePath, "new", RECORDS_PER_ROUND));
 
@@ -146,6 +148,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
 
     @Test
     void testUnionReadPkTableAcrossPartitionsWithDifferentBucketCounts() throws Exception {
+        // 中文解释：将不同桶数的主键分区入湖后停止 tiering，再更新已有主键，验证批量联合读取以 Fluss 更新覆盖湖旧值，并正确处理分区过滤。
         String tableName = "rescale_bucket_pk_table";
         TablePath tablePath = TablePath.of(DEFAULT_DB, tableName);
         createPartitionedPkTable(tablePath, OLD_BUCKET_NUM);
@@ -186,6 +189,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
 
         // update existing keys after tiering so the read must merge lake snapshot with the fluss
         // log tail (dedup by primary key), on both the old and new bucket-count partitions
+        // 中文解释：用相同主键覆盖旧值而不是追加新键，可检查联合读取是否正确消除湖快照中的旧版本。
         List<InternalRow> updates = new ArrayList<>();
         updates.add(row(0, "old-updated", "old"));
         updates.add(row(0, "new-updated", "new"));
@@ -223,6 +227,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
 
     @Test
     void testStreamUnionReadAcrossPartitionsWithDifferentBucketCounts() throws Exception {
+        // 中文解释：完成不同桶数分区的首次入湖后开启流式联合读取，再追加日志，验证湖快照与后续 Fluss 数据均被读出且没有多余记录。
         String tableName = "rescale_bucket_stream_log_table";
         TablePath tablePath = TablePath.of(DEFAULT_DB, tableName);
         createPartitionedLogTable(tablePath, OLD_BUCKET_NUM);
@@ -265,6 +270,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
 
     @Test
     void testStreamUnionReadPkTableAcrossPartitionsWithDifferentBucketCounts() throws Exception {
+        // 中文解释：对不同桶数主键分区从湖快照开始流读，再更新同一主键，验证初始 INSERT 和成对 UPDATE_BEFORE、UPDATE_AFTER 事件均完整。
         String tableName = "rescale_bucket_stream_pk_table";
         TablePath tablePath = TablePath.of(DEFAULT_DB, tableName);
         createPartitionedPkTable(tablePath, OLD_BUCKET_NUM);
@@ -305,6 +311,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
             // update one key in each partition after the stream started: the changelog must
             // arrive as -U/+U from the fluss log tail on both the old (2-bucket) and the new
             // (4-bucket) partition, proving the tail is subscribed by per-partition bucket range
+            // 中文解释：同时更新新旧分区中的键 0，期望每个分区各产生一对更新事件，验证两种布局下的快照到日志衔接。
             List<InternalRow> updates = new ArrayList<>();
             updates.add(row(0, "old-updated", "old"));
             updates.add(row(0, "new-updated", "new"));
@@ -325,6 +332,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
 
     @Test
     void testUnionReadLakeOnlyExpiredPartitionAfterRescale() throws Exception {
+        // 中文解释：将旧分区入湖后从 Fluss 删除，验证全表及旧分区过滤查询仍能读取湖端保留的数据，并与新分区结果正确组合。
         String tableName = "rescale_bucket_expired_log_table";
         TablePath tablePath = TablePath.of(DEFAULT_DB, tableName);
         createPartitionedLogTable(tablePath, OLD_BUCKET_NUM);
@@ -350,6 +358,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
             jobClient.cancel().get();
         }
 
+        // 中文解释：只删除 Fluss 分区，保留已提交的 Paimon 文件，使随后读取必须走湖中独有分区的规划路径。
         admin.dropPartition(
                         tablePath, new PartitionSpec(Collections.singletonMap("c", "old")), false)
                 .get();
@@ -455,6 +464,7 @@ class FlinkUnionReadRescaleBucketITCase extends FlinkUnionReadTestBase {
         return bucketCountByName;
     }
 
+    // 中文解释：只等待已有记录的桶出现入湖标记，空桶没有 tiering split，等待它们会造成测试永远无法就绪。
     private void waitUntilPartitionBucketsSynced(TablePath tablePath, long tableId)
             throws Exception {
         // empty buckets never get a tiering split (nothing to tier), so only wait for the lake

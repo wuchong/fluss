@@ -507,6 +507,7 @@ public abstract class RpcServiceBase extends RpcGatewayService implements AdminR
         // combining a pre-ALTER PartitionRegistration (without bucketCount) with a post-ALTER
         // TableInfo.
         TableInfo tableInfo = metadataManager.getTable(tablePath);
+        // 中文解释：先读表再读分区注册，配合 ALTER 原子回填，避免把旧的缺桶数注册与新的表默认值组合。
         List<String> partitionKeys = tableInfo.getPartitionKeys();
 
         Map<String, PartitionRegistration> partitionRegistrations;

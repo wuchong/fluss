@@ -62,6 +62,7 @@ public interface LakeCatalog extends AutoCloseable {
      * @param context contextual information needed for alter table
      * @throws TableNotExistException if the table not exists
      */
+    // 中文解释：bucket.num 是由 Fluss 协调的默认布局变更入口，湖原生桶数选项仍需受限，防止绕开分区布局管理。
     void alterTable(TablePath tablePath, List<TableChange> tableChanges, Context context)
             throws TableNotExistException;
 

@@ -528,6 +528,7 @@ public class MetadataManager {
             return;
         }
         // Paimon only tracks a bucket count for Fixed Bucket tables (bucket-key non-empty).
+        // 中文解释：无分桶键的湖表采用 unaware bucket，Fluss 分区桶数变化不应被转换成湖端固定桶配置。
         if (tableInfo.getBucketKeys().isEmpty()) {
             return;
         }
@@ -541,6 +542,7 @@ public class MetadataManager {
         }
         // The propagation travels through the unified alterTable channel as a "bucket.num"
         TableDescriptor currentDescriptor = tableInfo.toTableDescriptor();
+        // 中文解释：将 Fluss 的结构化桶数变更转换成受控湖 Catalog 操作；这里不开放用户直接修改湖原生 bucket 选项。
         List<TableChange> bucketCountChange =
                 Collections.singletonList(
                         TableChange.set(BUCKET_NUM_PROPERTY, String.valueOf(newBucketCount)));
@@ -583,6 +585,7 @@ public class MetadataManager {
             TablePath tablePath, TableInfo tableInfo, int newBucketNum) {
         // Non-partitioned tables require creating new bucket assignments and initializing
         // LogTablets on TabletServers, which is not yet implemented.
+        // 中文解释：本功能只改变未来分区的默认布局；非分区表没有新分区边界，因此当前实现明确拒绝在线改桶数。
         if (tableInfo.getPartitionKeys().isEmpty()) {
             throw new InvalidAlterTableException(
                     String.format(
@@ -625,6 +628,7 @@ public class MetadataManager {
                             + "; use ALTER TABLE ... SET ('bucket.num' = '<bucket count>') to "
                             + "change the bucket count.");
         }
+        // 中文解释：bucket.num 属于表 distribution 的结构字段，先从普通属性变更集合取出，避免当成无关自定义属性持久化。
         String newBucketNumStr =
                 tablePropertyChanges.customPropertiesToSet.remove(BUCKET_NUM_PROPERTY);
         Integer newBucketNum;
@@ -655,6 +659,7 @@ public class MetadataManager {
             // Reject mixed ALTERs (bucket.num + other property changes) before any lake-side
             // mutation. A mixed ALTER could leave Fluss and the lake permanently diverged if the
             // non-bucket.num changes fail after the bucket count has already been propagated.
+            // 中文解释：在任何湖端副作用之前拒绝混合 ALTER，避免桶数已传播而同语句中其他属性校验失败。
             if (!remainingTableChanges.isEmpty()) {
                 throw new InvalidAlterTableException(
                         "Cannot alter 'bucket.num' together with other property changes "
@@ -672,9 +677,11 @@ public class MetadataManager {
                     TableInfo preAlterTableInfo = getTable(tablePath);
                     validateBucketNumRescale(tablePath, preAlterTableInfo, newBucketNum);
                     // A same-value ALTER leaves the bucket layout unchanged.
+                    // 中文解释：同值设置直接结束，不调用湖 Catalog、不推进布局版本，保持重复执行的无操作语义。
                     if (newBucketNum == preAlterTableInfo.getNumBuckets()) {
                         return;
                     }
+                    // 中文解释：先更新湖默认值，再进入读取 ZK 版本及提交的阶段；湖失败可阻止 Fluss 提交，但两端操作并非同一事务。
                     propagateBucketCountToLake(
                             tablePath, preAlterTableInfo, newBucketNum, flussPrincipal);
                 }
@@ -695,6 +702,7 @@ public class MetadataManager {
                 throw e;
             } catch (KeeperException.NoNodeException e) {
                 // A partition was dropped concurrently, or the table itself was dropped.
+                // 中文解释：NoNode 既可能是分区被删，也可能是整表删除；先区分永久失效，再决定是否重读状态重试。
                 if (!isTablePresent(tablePath)) {
                     if (ignoreIfNotExists) {
                         return;
@@ -761,6 +769,7 @@ public class MetadataManager {
         ZooKeeperClient.VersionedData<TableRegistration> versionedTableReg =
                 getTableRegistrationWithVersion(tablePath);
         TableRegistration tableReg = versionedTableReg.data();
+        // 中文解释：本次尝试固定表节点版本，之后把表修改和存量分区回填一起做带版本检查的 ZK 提交。
         int tableZkVersion = versionedTableReg.zkVersion();
         SchemaInfo schemaInfo = getLatestSchema(tablePath);
         // we can't use MetadataManager#getTable here, because it will add the default
@@ -779,9 +788,11 @@ public class MetadataManager {
             //  rolled, and enable ALTER only after every server is upgraded.
             // If bucket.num is being changed on a partitioned table, compute the backfill
             // of old partitions' current actual bucket count.
+            // 中文解释：首次改布局前补齐旧格式分区自己的桶数，使它们在表默认值改变后仍能按原 assignment 路由。
             partitionBucketCountBackfills = computePartitionBucketCountBackfill(tablePath);
 
             // Update the structural bucketCount field and increment bucketCountEpoch
+            // 中文解释：只生成新的表注册和递增 epoch，不为旧分区重新生成 assignment，也不迁移已有记录。
             tableReg = tableReg.withBucketCount(newBucketNum);
         }
 
@@ -896,6 +907,7 @@ public class MetadataManager {
                 }
                 PartitionRegistration reg = optReg.get().data();
                 int partitionZkVersion = optReg.get().zkVersion();
+                // 中文解释：只回填旧格式缺失值，已经拥有实际桶数的分区保持不变，重试不会把它们改成新默认值。
                 if (reg.getBucketCount() != null) {
                     // Already has bucket count persisted, skip. Idempotent so retries are safe.
                     continue;
@@ -914,6 +926,7 @@ public class MetadataManager {
                                             + "ALTER.",
                                     tablePath, partitionName, partitionId));
                 }
+                // 中文解释：历史布局的依据是该分区已有 assignment 的桶数，不能从正在修改的表默认值推测。
                 int bucketCount = optAssignment.get().getBucketAssignments().size();
                 PartitionRegistration updatedReg =
                         new PartitionRegistration(

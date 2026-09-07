@@ -489,6 +489,7 @@ public class RecoveryOffsetManager {
         Set<TableBucket> buckets = new HashSet<>();
         if (isPartitioned) {
             for (PartitionInfo partition : getPartitionInfos()) {
+                // 中文解释：checkpoint 恢复的目标集合只包含分区真实存在的桶，防止向旧分区的虚构桶执行 undo 或注册 offset。
                 int partitionBucketCount = partition.getBucketCount();
                 for (int bucketId = 0; bucketId < partitionBucketCount; bucketId++) {
                     buckets.add(new TableBucket(tableId, partition.getPartitionId(), bucketId));
@@ -643,6 +644,7 @@ public class RecoveryOffsetManager {
             int bucketCount,
             Map<TableBucket, Long> offsets)
             throws Exception {
+        // 中文解释：首次注册与恢复查询传入目标分区实际桶数，保证 offset 请求范围与恢复状态中的桶身份一致。
         List<Integer> bucketIds = new ArrayList<>(bucketCount);
         for (int i = 0; i < bucketCount; i++) {
             bucketIds.add(i);

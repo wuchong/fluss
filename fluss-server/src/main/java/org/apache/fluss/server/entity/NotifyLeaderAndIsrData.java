@@ -33,6 +33,7 @@ public final class NotifyLeaderAndIsrData {
     private final List<Integer> replicas;
     private final LeaderAndIsr leaderAndIsr;
     // null when a legacy coordinator omits the fields
+    // 中文解释：路由状态随角色通知传递；可空类型保留旧 Coordinator 未发送字段的区别，供激活阶段执行兼容性检查。
     private final @Nullable Integer bucketCount;
     private final @Nullable Long bucketCountEpoch;
 

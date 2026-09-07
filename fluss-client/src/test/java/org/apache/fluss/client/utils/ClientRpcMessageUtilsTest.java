@@ -135,6 +135,7 @@ class ClientRpcMessageUtilsTest {
 
     @Test
     void testToPartitionInfosParsesBucketCount() {
+        // 中文解释：混合包含及缺少 bucket_count 的分区响应，验证显式值为 8、旧响应回退为传入的 4，避免把协议缺省值 0 当作布局。
         // one partition with bucket_count set, one without (simulating an old cluster / old
         // partition that did not persist per-partition bucket count)
         ListPartitionInfosResponse response =

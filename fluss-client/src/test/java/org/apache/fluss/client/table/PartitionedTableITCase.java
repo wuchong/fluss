@@ -207,6 +207,7 @@ class PartitionedTableITCase extends ClientToServerITCaseBase {
 
     @Test
     void testCreatePartitionExceedMaxPartitionNumber() throws Exception {
+        // 中文解释：先动态创建达到上限的 10 个分区，再写第 11 个分区，验证同步分区创建把容量限制异常直接交给本次写入。
         // test make partition number exceed max partition number 10 (set in
         // ClientToServerITCaseBase).
         createPartitionedTable(DATA1_TABLE_PATH_PK, true);

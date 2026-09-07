@@ -218,6 +218,7 @@ abstract class FlinkCatalogITCase {
 
     @Test
     void testAlterTableConfig() throws Exception {
+        // 中文解释：通过 Flink SQL 修改表选项并回读 Catalog，验证可修改属性生效，同时非分区表改桶数等非法变更仍被对应校验层拒绝。
         String ddl =
                 "create table test_alter_table_append_only ("
                         + "a string, "

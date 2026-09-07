@@ -350,6 +350,7 @@ public class TieringSplitReader<WriteResult>
             if (currentTableInfo.isPartitioned()) {
                 try {
                     // the admin is a shared per-connection instance, so it must not be closed here
+                    // 中文解释：Admin 是 connection 共享对象，此处只借用它列出分区布局，不负责关闭，否则会影响同连接后续操作。
                     Admin admin = connection.getAdmin();
                     for (PartitionInfo partitionInfo : admin.listPartitionInfos(tablePath).get()) {
                         currentTablePartitionBucketCounts.put(
@@ -375,6 +376,7 @@ public class TieringSplitReader<WriteResult>
      * Resolves the historical partition's own bucket count into {@link
      * #currentTablePartitionBucketCounts}.
      */
+    // 中文解释：公开分区列表过滤内部历史分区，但 tiering 仍消费它，因此需要单独解析其物理 ID 与实际桶数。
     private void putHistoricalPartitionBucketCount(TablePath tablePath, long tableId) {
         PhysicalTablePath historicalPath =
                 PhysicalTablePath.of(tablePath, HISTORICAL_PARTITION_VALUE);
@@ -675,6 +677,7 @@ public class TieringSplitReader<WriteResult>
             throws IOException {
         LakeWriter<WriteResult> lakeWriter = lakeWriters.get(bucket);
         if (lakeWriter == null) {
+            // 中文解释：创建每桶 lake writer 时传入当前表快照中的分区桶数，使正常分区文件标记不受湖默认值变更影响。
             Integer partitionBucketCount =
                     bucket.getPartitionId() != null
                             ? currentTablePartitionBucketCounts.get(bucket.getPartitionId())
@@ -842,6 +845,7 @@ public class TieringSplitReader<WriteResult>
         currentTableStoppingOffsets.clear();
         currentTableTieredOffsetAndTimestamp.clear();
         currentTableSplitsByBucket.clear();
+        // 中文解释：结束当前表处理时释放其布局映射，下一张表重新收集，避免跨表复用残留元数据。
         currentTablePartitionBucketCounts.clear();
     }
 

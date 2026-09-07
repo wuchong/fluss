@@ -44,6 +44,7 @@ public class PartitionMetadataAssert
         // actual bucketCount is always non-null (falls back to bucketMetadataList size), so
         // only compare when expected sets it — otherwise legacy callers passing null fail
         // spuriously.
+        // 中文解释：只有预期对象声明桶数时才比较，允许旧测试仅描述 bucket 元数据而不额外指定布局值。
         if (expected.getBucketCount() != null) {
             assertThat(actual.getBucketCount()).isEqualTo(expected.getBucketCount());
         }

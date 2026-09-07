@@ -268,6 +268,7 @@ public class FlinkConnectorOptions {
     // modification disallowed connector options
     // --------------------------------------------------------------------------------------------
 
+    // 中文解释：Flink 不再一律拦截 bucket.num，而是交由服务端判断分区表、取值及湖同步约束；分桶键仍不可修改。
     public static final List<String> ALTER_DISALLOW_OPTIONS =
             Arrays.asList(AUTO_INCREMENT_FIELDS.key(), BUCKET_KEY.key(), BOOTSTRAP_SERVERS.key());
 

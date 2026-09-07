@@ -97,6 +97,7 @@ public class PartitionRegistration {
      * count; a missing count indicates an incomplete backfill and throws {@link
      * StaleMetadataException} so the caller can refresh metadata and retry.
      */
+    // 中文解释：注册有显式值时始终保留原分区布局；缺字段仅在 epoch 0 兼容，扩缩容后仍缺失则视为陈旧元数据。
     public int getBucketCountOrDefault(int tableBucketCount, long bucketCountEpoch) {
         if (bucketCount != null) {
             return bucketCount;

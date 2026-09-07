@@ -133,6 +133,7 @@ public class AdjustIsrTest extends ReplicaTestBase {
 
     @Test
     void testShrinkIsrUsesLatestStateAfterLeaderChange() throws Exception {
+        // 中文解释：用同一把读写锁控制升主、时间推进及缩 ISR 的排队顺序，验证缩 ISR 读取升主后的最新状态并移除超时 follower。
         TableBucket tb = new TableBucket(DATA1_TABLE_ID, 1);
         Replica replica = makeLogReplica(DATA1_PHYSICAL_TABLE_PATH, tb);
         NotifyLeaderAndIsrData leaderData =
@@ -152,6 +153,7 @@ public class AdjustIsrTest extends ReplicaTestBase {
             AtomicReference<Thread> advanceClockThread = new AtomicReference<>();
             AtomicReference<Thread> shrinkIsrThread = new AtomicReference<>();
 
+            // 中文解释：先占住写锁，再等待三个操作依次进入锁队列，以固定升主、超时推进、缩 ISR 的观察顺序。
             leaderIsrUpdateLock.writeLock().lock();
             CompletableFuture<Void> makeLeaderFuture;
             CompletableFuture<Void> advanceClockFuture;

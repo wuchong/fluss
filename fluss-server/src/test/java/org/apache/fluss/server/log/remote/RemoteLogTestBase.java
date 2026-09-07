@@ -82,6 +82,7 @@ public class RemoteLogTestBase extends ReplicaTestBase {
     private Replica makeReplicaAndAddSegments(
             PhysicalTablePath physicalTablePath, TableBucket tb, int segmentSize) throws Exception {
         Replica replica = makeLogReplica(physicalTablePath, tb);
+        // 中文解释：远端日志夹具先按 3 桶、epoch 0 激活副本，再构造日志段，满足新版本升主所需的路由信息。
         replica.makeLeader(
                 new NotifyLeaderAndIsrData(
                         physicalTablePath,

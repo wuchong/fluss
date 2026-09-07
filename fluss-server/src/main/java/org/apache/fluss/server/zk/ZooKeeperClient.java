@@ -1113,6 +1113,7 @@ public class ZooKeeperClient implements AutoCloseable {
             Map<String, VersionedData<PartitionRegistration>> partitionBackfills,
             int expectedCoordinatorEpochZkVersion)
             throws Exception {
+        // 中文解释：把所有旧分区回填与表默认值修改装入同一事务，各 setData 使用读取时版本，避免部分提交。
         List<CuratorOp> ops = new ArrayList<>(partitionBackfills.size() + 1);
         for (Map.Entry<String, VersionedData<PartitionRegistration>> entry :
                 partitionBackfills.entrySet()) {
@@ -1133,6 +1134,7 @@ public class ZooKeeperClient implements AutoCloseable {
                         .forPath(tablePathStr, tableData));
 
         List<CuratorOp> fencedOps =
+                // 中文解释：表和分区的 CAS 之外还检查 Coordinator 任期，阻止已失去领导权的实例继续写入。
                 wrapRequestsWithEpochCheck(ops, expectedCoordinatorEpochZkVersion);
         zkClient.transaction().forOperations(fencedOps);
         LOG.info(

@@ -629,6 +629,7 @@ public class ServerRpcMessageUtils {
                         .setPartitionName(partitionMetadata.getPartitionName());
         pbPartitionMetadata.addAllBucketMetadatas(
                 toPbBucketMetadata(partitionMetadata.getBucketMetadataList()));
+        // 中文解释：协议同时输出分区实际桶数；仅在内部元数据未提供显式值时，使用现有桶列表长度补齐。
         Integer bucketCount = partitionMetadata.getBucketCount();
         int effectiveBucketCount =
                 bucketCount != null

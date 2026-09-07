@@ -140,6 +140,7 @@ public class LakeSplitGenerator {
             Map<TableBucket, Long> tableBucketSnapshotLogOffset,
             Set<PartitionInfo> partitionInfos) {
         List<SourceSplitBase> splits = new ArrayList<>();
+        // 中文解释：保留完整 PartitionInfo 以便湖与 Fluss 按分区名匹配时，同时取得该分区自己的桶数。
         Map<String, PartitionInfo> flussPartitionByName =
                 partitionInfos.stream()
                         .collect(
@@ -192,6 +193,7 @@ public class LakeSplitGenerator {
         }
 
         // iterate remain fluss splits
+        // 中文解释：湖端遍历后剩下的是仅在 Fluss 中存在的分区，仍需按各自布局构造日志或快照读取范围。
         for (PartitionInfo flussPartition : flussPartitionByName.values()) {
             String partitionName = flussPartition.getPartitionName();
             int partitionBucketCount = flussPartition.getBucketCount();
@@ -262,6 +264,7 @@ public class LakeSplitGenerator {
             if (lakeSplits != null) {
                 // Pairing below only visits buckets in [0, numBuckets), so any lake split with a
                 // bucket id outside that range would otherwise be lost from the union read.
+                // 中文解释：主键联合读取按同一 bucket 配对湖与 Fluss 数据；湖桶超出枚举范围时必须报错，不能直接遗漏这些文件。
                 List<Integer> outOfRangeBuckets =
                         lakeSplits.keySet().stream()
                                 .filter(bucket -> bucket >= numBuckets)

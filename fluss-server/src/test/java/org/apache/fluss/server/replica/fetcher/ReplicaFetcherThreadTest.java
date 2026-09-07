@@ -557,6 +557,7 @@ public class ReplicaFetcherThreadTest {
 
     private void makeLeaderAndFollower(
             PhysicalTablePath physicalTablePath, TableBucket tableBucket) {
+        // 中文解释：同时建立可服务的 leader 与 follower，通知中的桶数匹配测试表布局，使后续断言聚焦复制状态机。
         leaderRM.becomeLeaderOrFollower(
                 INITIAL_COORDINATOR_EPOCH,
                 Collections.singletonList(

@@ -197,6 +197,7 @@ public final class Replica {
 
     // Routing state carried with activation: both values are immutable per bucket, so they are
     // set once and never change. Null until the coordinator notifies them.
+    // 中文解释：保存角色通知携带的实际布局，服务端收到客户端请求时可直接校验，无需等待 Cluster 元数据刷新。
     private volatile @Nullable Integer routingBucketCount;
     private volatile @Nullable Long bucketCountEpoch;
 
@@ -460,6 +461,7 @@ public final class Replica {
      * Adopts the routing state carried by the notification. Both values are immutable per bucket,
      * so unset fields never overwrite known ones.
      */
+    // 中文解释：仅采用通知中非空的路由字段，避免缺字段的通知把已经知道的布局清空。
     public void updateRoutingState(NotifyLeaderAndIsrData data) {
         if (data.getBucketCount() != null) {
             this.routingBucketCount = data.getBucketCount();
@@ -474,6 +476,7 @@ public final class Replica {
      * coordinator is older than this server (upgrade contract: coordinator first).
      */
     private void requireRoutingState(NotifyLeaderAndIsrData data) {
+        // 中文解释：升主前要求通知至少带有路由桶数；缺失说明 Coordinator 版本较旧，按当前升级契约拒绝激活。
         if (data.getBucketCount() == null) {
             throw new UnsupportedVersionException(
                     "Leader activation for bucket "

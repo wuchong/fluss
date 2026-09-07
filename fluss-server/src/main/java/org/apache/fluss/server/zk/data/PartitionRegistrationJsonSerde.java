@@ -68,6 +68,7 @@ public class PartitionRegistrationJsonSerde
         }
         // When deserialize from an old version (v1), bucket_count may not exist.
         // Callers should fall back to table-level bucket count when this is null.
+        // 中文解释：旧版 JSON 不含桶数字段时保留 null，不在反序列化阶段猜默认值，回退判断由带表 epoch 的上层完成。
         Integer bucketCount = null;
         if (node.has(BUCKET_COUNT_ACTUAL_KEY)) {
             bucketCount = node.get(BUCKET_COUNT_ACTUAL_KEY).asInt();

@@ -337,6 +337,7 @@ class HistoricalPartitionITCase extends FlinkPaimonTieringTestBase {
     @ValueSource(booleans = {true, false})
     void testLookupExpiredPartitionAfterBucketNumRescale(boolean defaultBucketKey)
             throws Exception {
+        // 中文解释：选择在扩容前后会落入不同桶的键，令旧分区入湖后过期，验证默认及子集分桶键两种布局的历史点查仍返回旧分区原行。
         TablePath tablePath =
                 TablePath.of(
                         DEFAULT_DB,
@@ -349,6 +350,7 @@ class HistoricalPartitionITCase extends FlinkPaimonTieringTestBase {
 
         // A key that lands in different buckets under the two layouts, so routing with the wrong
         // bucket count cannot accidentally hit the right lake bucket.
+        // 中文解释：挑选在两种桶数下哈希结果不同的键，防止错误地使用新默认桶数也偶然查中，从而掩盖路由问题。
         int lookupId = idRoutedDifferentlyAcrossLayouts(defaultBucketKey, schema);
 
         admin.alterTable(
@@ -424,6 +426,7 @@ class HistoricalPartitionITCase extends FlinkPaimonTieringTestBase {
         try {
             // The tiered lake data of the old partition keeps the bucket count it was written with,
             // not the new table-level one.
+            // 中文解释：等待旧分区文件记录其原始桶数；最终断言是过期后的点查，不包含迟到更新回写湖端的验证。
             retry(
                     Duration.ofMinutes(2),
                     () ->
@@ -460,6 +463,7 @@ class HistoricalPartitionITCase extends FlinkPaimonTieringTestBase {
      * Returns an id whose bucket differs between the pre-rescale and post-rescale layouts, so a
      * lookup routed with the wrong bucket count cannot accidentally read the right lake bucket.
      */
+    // 中文解释：寻找会因桶数改变而换桶的主键，确保历史查询测试能区分正确的旧布局路由与错误的新默认布局。
     private static int idRoutedDifferentlyAcrossLayouts(boolean defaultBucketKey, Schema schema) {
         for (int id = 1; id <= MAX_CANDIDATE_ID; id++) {
             if (lakeBucketOf(defaultBucketKey, schema, id, PRE_RESCALE_BUCKET_NUM)

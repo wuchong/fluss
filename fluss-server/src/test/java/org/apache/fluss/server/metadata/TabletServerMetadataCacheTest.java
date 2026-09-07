@@ -323,6 +323,7 @@ public class TabletServerMetadataCacheTest {
 
     @Test
     void testPartitionBucketCountRemovedOnDelete() {
+        // 中文解释：先缓存显式分区桶数再删除并重建元数据，验证桶数随分区一起清除，新条目不会继承被删除分区的旧布局。
         // Seed both partitions with explicit per-partition bucket counts.
         int explicitBucketCount = 8;
         serverMetadataCache.updateClusterMetadata(
@@ -373,6 +374,7 @@ public class TabletServerMetadataCacheTest {
         // Re-add partition1 WITHOUT an explicit bucketCount. The cache must NOT return the
         // stale 8; the DELETED_PARTITION_ID path must have removed the prior entry from the
         // partitionBucketCounts map so the fallback (bucketMetadataList.size()) applies.
+        // 中文解释：重新加入不含显式桶数的元数据，检查返回值来自新的 bucket 列表，证明删除时旧显式值已被清理。
         serverMetadataCache.updateClusterMetadata(
                 new ClusterMetadata(
                         coordinatorServer,
@@ -433,6 +435,7 @@ public class TabletServerMetadataCacheTest {
 
     @Test
     void testUpdatePartitionMetadataPropagatesExplicitBucketCount() {
+        // 中文解释：通过单分区更新接口传入与 bucket 列表长度不同的显式桶数，验证缓存优先保留注册声明的实际值。
         // Seed table metadata: updatePartitionMetadata bails out if the tableId is unknown.
         serverMetadataCache.updateClusterMetadata(
                 new ClusterMetadata(

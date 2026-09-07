@@ -257,6 +257,7 @@ public class TableScan implements Scan {
                     partitionInfos.stream()
                             .flatMap(
                                     partitionInfo ->
+                                            // 中文解释：自动构造扫描桶集合时逐分区枚举，避免少扫新分区或为旧分区创建越界桶。
                                             IntStream.range(0, partitionInfo.getBucketCount())
                                                     .mapToObj(
                                                             bucketId ->

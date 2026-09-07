@@ -64,6 +64,7 @@ abstract class FlussMicroBatchStream(
     val infos = admin.listPartitionInfos(tablePath).get()
     // Fail fast if any partition's bucket count differs from the table-level count.
     // Per-partition bucket count rescale (ALTER bucket.num) is not yet supported in Spark.
+    // 中文解释：Spark 微批读取尚未支持不同分区布局，发现实际桶数与表默认值不同就明确拒绝，避免按错误范围规划。
     val tableBucketCount = tableInfo.getNumBuckets
     infos.asScala.foreach {
       info =>

@@ -153,6 +153,7 @@ final class ReplicaTest extends ReplicaTestBase {
 
     @Test
     void testGetOffsetRequiresLeader() throws Exception {
+        // 中文解释：构造尚未成为 leader 的日志副本并查询 offset，验证角色检查在实际读取前返回 NotLeaderOrFollowerException。
         Replica replica =
                 makeLogReplica(DATA1_PHYSICAL_TABLE_PATH, new TableBucket(DATA1_TABLE_ID, 1));
 
@@ -230,6 +231,7 @@ final class ReplicaTest extends ReplicaTestBase {
 
     @Test
     void testBucketPhysicalStorageLocalLogSizeIncludesFollower() throws Exception {
+        // 中文解释：记录 leader 的本地日志大小后把它切为 follower，验证物理存储指标仍统计本地持有的文件，不因角色改变归零。
         TableBucket tableBucket = new TableBucket(DATA1_TABLE_ID, 1);
         Replica logReplica = makeLogReplica(DATA1_PHYSICAL_TABLE_PATH, tableBucket);
         makeLogReplicaAsLeader(logReplica);

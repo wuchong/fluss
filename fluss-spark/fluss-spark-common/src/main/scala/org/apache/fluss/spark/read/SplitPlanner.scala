@@ -134,6 +134,7 @@ abstract class AbstractSplitPlanner(
     val infos = admin.listPartitionInfos(tablePath).get()
     // Fail fast if any partition's bucket count differs from the table-level count.
     // Per-partition bucket count rescale (ALTER bucket.num) is not yet supported in Spark.
+    // 中文解释：Spark split 规划保留统一桶数假设，因此先校验所有分区，不能悄悄忽略扩缩容带来的不同布局。
     val tableBucketCount = tableInfo.getNumBuckets
     infos.asScala.foreach {
       info =>

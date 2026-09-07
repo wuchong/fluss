@@ -164,6 +164,7 @@ class FlussAdminITCase extends ClientToServerITCaseBase {
 
     @Test
     void testMultiClient() throws Exception {
+        // 中文解释：验证同一连接复用 Admin 实例，并且两次读取返回相同的表元数据；扩展桶数元数据后仍需保持这一一致性。
         Admin admin1 = conn.getAdmin();
         Admin admin2 = conn.getAdmin();
         assertThat(admin1).isEqualTo(admin2);
@@ -1238,6 +1239,7 @@ class FlussAdminITCase extends ClientToServerITCaseBase {
 
     @Test
     void testKvSnapshotLeaseAfterCoordinatorServerRestart() throws Exception {
+        // 中文解释：通过多次重启 Coordinator 使租约持有的地址过期，验证获取、释放及删除快照租约能刷新地址，并在 ZK 中产生预期状态。
         long tableId = admin.getTableInfo(DEFAULT_TABLE_PATH).get().getTableId();
         TableBucket tableBucket = new TableBucket(tableId, 0);
         Map<TableBucket, Long> snapshots = Collections.singletonMap(tableBucket, 0L);
@@ -2904,11 +2906,13 @@ class FlussAdminITCase extends ClientToServerITCaseBase {
 
     @Test
     void testSendListOffsetsRequestOnGatewayRpcFailure() throws Exception {
+        // 中文解释：让 TabletServer 网关异步返回网络异常，验证批量查询 offset 的聚合 Future 能透传失败，而不会一直等待各桶结果。
         TestTabletServerGateway failingGateway =
                 new TestTabletServerGateway(false, Collections.emptySet()) {
                     @Override
                     public CompletableFuture<ListOffsetsResponse> listOffsets(
                             ListOffsetsRequest request) {
+                        // 中文解释：此处只返回异常 Future，不构造逐桶响应，专门覆盖网关层失败传播到聚合结果的分支。
                         CompletableFuture<ListOffsetsResponse> future = new CompletableFuture<>();
                         future.completeExceptionally(new NetworkException("connection timed out"));
                         return future;

@@ -68,6 +68,7 @@ class PartitionBucketCountRescaleITCase extends ClientToServerITCaseBase {
 
     @Test
     void testLogTableReadWriteAcrossRescale() throws Exception {
+        // 中文解释：分别向扩容前后的分区写入日志，再按各分区自己的桶范围读回，逐分区比较完整数据以验证写入与扫描采用相同布局。
         // Write records to partitions with different bucket counts (old partition keeps
         // OLD_BUCKET_NUM, new partition uses NEW_BUCKET_NUM). Routing by the wrong (table-level)
         // count would miss rows when reading back each partition's own bucket range.
@@ -101,6 +102,7 @@ class PartitionBucketCountRescaleITCase extends ClientToServerITCaseBase {
 
     @Test
     void testPkTableReadPathsAcrossRescale() throws Exception {
+        // 中文解释：在新旧桶数并存的主键表中写入相同规模的数据，通过点查、日志扫描、KV 快照扫描和总行数统计检查各读取路径。
         TablePath tablePath = TablePath.of("test_db_1", "test_rescale_pk_read_paths");
         Schema schema = pkSchema("a", "c");
         createPartitionedTable(tablePath, schema);
@@ -144,6 +146,7 @@ class PartitionBucketCountRescaleITCase extends ClientToServerITCaseBase {
             int bucketCount = bucketCountByName.get(partitionName);
             int partitionSum = 0;
             for (int bucketId = 0; bucketId < bucketCount; bucketId++) {
+                // 中文解释：为每个实际存在的桶生成并等待 KV 快照，随后扫描固定快照，使行数断言对应完整可读的存储状态。
                 TableBucket tb = new TableBucket(tableId, partitionId, bucketId);
                 long snapshotId =
                         FLUSS_CLUSTER_EXTENSION.triggerAndWaitSnapshot(tb).getSnapshotID();
@@ -179,6 +182,7 @@ class PartitionBucketCountRescaleITCase extends ClientToServerITCaseBase {
 
     @Test
     void testSameValueBucketNumAlterIsNoOp() throws Exception {
+        // 中文解释：分别在首次扩容前后重复设置相同桶数，验证同值 ALTER 不推进 epoch，只有真正改变默认桶数才更新版本。
         // SET ('bucket.num' = currentValue) does not change the bucket layout, so it must not
         // advance bucketCountEpoch: legacy-client routing and historical lookup both read
         // epoch > 0 as evidence that mixed bucket layouts may exist.
@@ -213,6 +217,7 @@ class PartitionBucketCountRescaleITCase extends ClientToServerITCaseBase {
 
     @Test
     void testDynamicallyCreatedPartitionUsesPostAlterBucketCount() throws Exception {
+        // 中文解释：先修改默认桶数，再通过首条写入动态创建分区；检查新分区持久化的新桶数，并按该布局读回全部数据。
         // A partition created dynamically by the WRITER after an ALTER must use the new bucket
         // count and be readable through that range.
         clientConf.set(ConfigOptions.CLIENT_WRITER_DYNAMIC_CREATE_PARTITION_ENABLED, true);
@@ -255,6 +260,7 @@ class PartitionBucketCountRescaleITCase extends ClientToServerITCaseBase {
 
     @Test
     void testStaleTableHandleWritesToDynamicallyCreatedPartitionAfterAlter() throws Exception {
+        // 中文解释：在 ALTER 前保留 Table 和 Writer，再用旧句柄写入尚不存在的分区，验证动态创建及后续点查采用新分区实际桶数。
         // Old writers hold a stale table-level bucket count; new partitions must route by
         // their actual (post-ALTER) count, otherwise lookups miss.
         clientConf.set(ConfigOptions.CLIENT_WRITER_DYNAMIC_CREATE_PARTITION_ENABLED, true);
@@ -267,6 +273,7 @@ class PartitionBucketCountRescaleITCase extends ClientToServerITCaseBase {
         createPartitionedTable(tablePath, schema);
 
         // open the handle BEFORE the ALTER, then rescale on the server side
+        // 中文解释：必须在 ALTER 之前打开句柄，才能证明后续成功来自分区元数据刷新，而非重新创建 Table 获得了新默认值。
         Table staleTable = conn.getTable(tablePath);
         UpsertWriter upsertWriter = staleTable.newUpsert().createWriter();
         alterBucketNum(tablePath, NEW_BUCKET_NUM);
@@ -293,6 +300,7 @@ class PartitionBucketCountRescaleITCase extends ClientToServerITCaseBase {
 
     @Test
     void testPrefixLookupAcrossPartitionsWithDifferentBucketCounts() throws Exception {
+        // 中文解释：以部分主键作为分桶键，在不同桶数的分区写入一对多的前缀键，验证每次前缀查询均能返回该键对应的所有行。
         // Prefix lookup must resolve the bucket with the correct per-partition count; a mismatch
         // would query the wrong bucket and miss rows.
         TablePath tablePath = TablePath.of("test_db_1", "test_rescale_prefix_lookup");

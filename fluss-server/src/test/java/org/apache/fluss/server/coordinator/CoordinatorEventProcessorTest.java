@@ -1633,6 +1633,7 @@ class CoordinatorEventProcessorTest {
 
     @Test
     void testSchemaChangeKeepsBucketCountEpochAfterRescale() throws Exception {
+        // 中文解释：先扩容推进桶数 epoch，再执行新增列，等待事件处理及元数据广播，验证 schema 更新不会重置布局版本。
         initCoordinatorChannel();
         TablePath t1 = TablePath.of(defaultDatabase, "schema_change_keeps_epoch");
         int originalBucketCount = 3;
@@ -1695,6 +1696,7 @@ class CoordinatorEventProcessorTest {
                 (currentTable, updatedTable) -> {},
                 ZkVersion.MATCH_ANY_VERSION.getVersion());
 
+        // 中文解释：先保存扩容后的非零 epoch，再比较 schema 变更后的缓存和广播，防止重建 TableInfo 时意外使用默认 0。
         long epochAfterAlter = metadataManager.getTable(t1).getBucketCountEpoch();
         assertThat(epochAfterAlter).isGreaterThan(0L);
 
@@ -1732,6 +1734,7 @@ class CoordinatorEventProcessorTest {
 
     @Test
     void testTableRegistrationChange() throws Exception {
+        // 中文解释：修改已创建表的自定义属性，等待注册变更事件，验证 Coordinator 上下文和发给 TabletServer 的元数据都反映新属性。
         // make sure all request to gateway should be successful
         initCoordinatorChannel();
 
@@ -1808,6 +1811,7 @@ class CoordinatorEventProcessorTest {
 
     @Test
     void testAlterStandbyReplicaEnabled() throws Exception {
+        // 中文解释：在已有 standby 的主键表上关闭 standby 功能，验证上下文配置、ISR 状态及 ZK 中的 standby 集合最终一致清空。
         // make sure all request to gateway should be successful
         initCoordinatorChannel();
 
@@ -1867,6 +1871,7 @@ class CoordinatorEventProcessorTest {
 
     @Test
     void testAlterEnableStandbyReplicaForExistingTable() throws Exception {
+        // 中文解释：对在线且无 standby 的主键表启用功能，验证配置生效、standby 被选出，并通过推进 leader epoch 发布新副本角色。
         // Simulate a legacy PK table created without standby replica config.
         // After ALTER to enable standby replica, re-election should be triggered
         // and standby replicas should be assigned.
@@ -1946,6 +1951,7 @@ class CoordinatorEventProcessorTest {
 
     @Test
     void testAlterStandbyReplicaEnabledForLogTable() throws Exception {
+        // 中文解释：在日志表上分别启用和禁用 KV standby 配置，验证属性修改入口始终拒绝仅适用于主键表的选项。
         // Altering standby replica config on a log table (no PK) should throw an error
         initCoordinatorChannel();
 

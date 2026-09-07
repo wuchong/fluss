@@ -126,6 +126,7 @@ class AlterBucketNumTest {
     @Test
     void testAlterBucketNumOnLakeTablePassesValidationButAbortsWithoutLakeCatalog()
             throws Exception {
+        // 中文解释：湖表允许进入改桶数流程，但本夹具没有可用 LakeCatalog；验证湖端前置操作失败时，Fluss 表和已有分区仍保留原桶数。
         // A lake table is no longer rejected by validation; the ALTER proceeds to the lake
         // propagation, which aborts here because this harness wires no lake catalog. Covers the
         // lakeCatalog == null branch (distinct from a propagation call that fails, tested below).
@@ -152,6 +153,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterBucketNumLakePropagationFailureAbortsAlter() throws Exception {
+        // 中文解释：让 LakeCatalog 每次修改都抛错，验证只调用一次、明确报告湖同步失败，并且不会先改动 Fluss 表或分区的布局。
         CountingLakeCatalog stub = new CountingLakeCatalog(true);
         MetadataManager mm = buildMetadataManagerWithLakeCatalog(stub);
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_lake_alter_persistent_fail");
@@ -180,6 +182,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterBucketNumLakePropagationSucceedsFirstTry() throws Exception {
+        // 中文解释：用计数型 LakeCatalog 记录成功的默认桶数修改，验证一次湖端调用后 Fluss 默认桶数更新为目标值。
         CountingLakeCatalog stub = new CountingLakeCatalog(false);
         MetadataManager mm = buildMetadataManagerWithLakeCatalog(stub);
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_lake_alter_success");
@@ -196,6 +199,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterBucketNumSkipsLakePropagationForUnawareBucketTable() throws Exception {
+        // 中文解释：构造无 bucket key 的日志湖表，验证只改变 Fluss 新分区默认值，不向使用 unaware bucket 的湖表传播固定桶数。
         // A lake table WITHOUT bucket keys is an Unaware Bucket table in Paimon (BUCKET = -1
         // encodes the bucket MODE); propagating a positive BUCKET would flip its mode. The
         // propagation must be skipped entirely while the Fluss-side rescale still succeeds.
@@ -235,6 +239,7 @@ class AlterBucketNumTest {
      * Builds a coordinator-side MetadataManager and reflectively injects the given stub as the
      * cluster lake catalog, so lake propagation can be exercised without a real Paimon catalog.
      */
+    // 中文解释：用反射替换动态加载器内部 Catalog 为可计数替身，仅隔离湖操作，MetadataManager 和 ZK 提交仍使用真实实现。
     private static MetadataManager buildMetadataManagerWithLakeCatalog(LakeCatalog stub)
             throws Exception {
         LakeCatalogDynamicLoader loader =
@@ -320,6 +325,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterBucketNumRejectedOnNonPartitionedTable() throws Exception {
+        // 中文解释：对已有非分区表执行改桶数，验证服务端拒绝这类需要重分布现有数据的操作。
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_non_partitioned_reject");
         TableDescriptor logTable =
                 TableDescriptor.builder()
@@ -343,6 +349,7 @@ class AlterBucketNumTest {
 
     @Test
     void testResetBucketNumRejected() throws Exception {
+        // 中文解释：尝试 RESET bucket.num，验证异常提示必须显式 SET，同时表的桶数及 epoch 均保持原值。
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_reset_bucket_num_reject");
         int originalBucketCount = 4;
         metadataManager.createTable(
@@ -371,6 +378,7 @@ class AlterBucketNumTest {
     @CsvSource({"3, 6", "6, 3"})
     void testBackfillOnlyAffectsPartitionsWithoutBucketCount(
             int originalBucketCount, int newBucketCount) throws Exception {
+        // 中文解释：将一个分区注册改成旧格式缺失桶数，另一个保留显式值；参数覆盖扩容与缩容，验证只回填缺失值且两者都保留原布局。
         TablePath tablePath =
                 TablePath.of(
                         DEFAULT_DB,
@@ -411,6 +419,7 @@ class AlterBucketNumTest {
         Optional<PartitionRegistration> legacyReg =
                 zookeeperClient.getPartition(tablePath, "legacy");
         assertThat(legacyReg).isPresent();
+        // 中文解释：主动去掉已创建分区的显式桶数，模拟升级前存量注册格式；其 assignment 仍保存旧布局的真实桶数。
         PartitionRegistration nullBucketCountReg =
                 new PartitionRegistration(
                         legacyReg.get().getTableId(),
@@ -448,6 +457,7 @@ class AlterBucketNumTest {
 
     @Test
     void testPartitionCreatedInsideAlterWindowKeepsItsOwnBucketCount() throws Exception {
+        // 中文解释：在 ALTER 的首次提交前用回调插入一个按旧默认值创建的分区，验证提交后两个分区的桶数仍与各自 assignment 一致。
         // A partition created between the backfill enumeration and the commit is not part of the
         // backfill, so it must keep the bucket count of the assignment it was created with.
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_alter_vs_create_occ");
@@ -477,6 +487,7 @@ class AlterBucketNumTest {
 
         // The concurrent partition is created with the original count, mirroring a creation that
         // read the table registration before the ALTER committed.
+        // 中文解释：回调精确插入提交窗口，是受控顺序交错测试；这里没有依赖两个自由运行线程竞争来复现。
         MetadataManager alterManager =
                 metadataManagerOver(
                         zkClientRunningBeforeFirstCommit(
@@ -529,6 +540,7 @@ class AlterBucketNumTest {
     @ParameterizedTest
     @EnumSource(StaleFence.class)
     void testBackfillCommitRejectsStaleFence(StaleFence fence) throws Exception {
+        // 中文解释：分别制造表版本、分区版本和 Coordinator epoch 不匹配，验证 ZK 事务整体拒绝；刷新对应版本后相同更新可提交。
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_fence_" + fence.name().toLowerCase());
         int originalBucketCount = 4;
         TableAssignment tableAssignment =
@@ -562,6 +574,7 @@ class AlterBucketNumTest {
         Map<String, ZooKeeperClient.VersionedData<PartitionRegistration>> backfills =
                 new HashMap<>();
         int epochVersion = ZkVersion.MATCH_ANY_VERSION.getVersion();
+        // 中文解释：三类参数分别破坏不同版本条件，验证事务同时检查表、分区和 Coordinator 身份，而非只保护表节点。
         switch (fence) {
             case TABLE_VERSION:
                 zookeeperClient.updateTable(tablePath, table.data());
@@ -593,6 +606,7 @@ class AlterBucketNumTest {
                 .isEqualTo(originalBucketCount);
 
         // With every dimension fresh the same commit succeeds.
+        // 中文解释：重新读取实际版本后再提交，证明前次失败来自 fencing 条件，且失败事务没有先写入部分更新。
         ZooKeeperClient.VersionedData<TableRegistration> freshTable =
                 zookeeperClient.getTableWithVersion(tablePath).get();
         Map<String, ZooKeeperClient.VersionedData<PartitionRegistration>> freshBackfills =
@@ -616,6 +630,7 @@ class AlterBucketNumTest {
     void testAlterBucketNumRejectedOutOfRange(
             String newBucketNum, Class<? extends Throwable> expectedException, String message)
             throws Exception {
+        // 中文解释：用参数化的非法桶数覆盖校验边界，核对异常类型和提示，并确认拒绝操作不会改变原有表默认值。
         TablePath tablePath =
                 TablePath.of(DEFAULT_DB, "test_alter_bucket_num_out_of_range_" + newBucketNum);
         int originalBucketCount = 4;
@@ -645,6 +660,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterBucketNumRetriesOnceThenSucceeds() throws Exception {
+        // 中文解释：让第一次 ZK 提交抛出版本冲突、第二次正常执行，验证 ALTER 重新读取状态并在两次提交尝试后成功。
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_alter_bucket_num_retry_success");
         int originalBucketCount = 4;
         metadataManager.createTable(
@@ -657,6 +673,7 @@ class AlterBucketNumTest {
         // A ZK client that throws BadVersion on the first bucket-count commit, then delegates.
         // This deterministically exercises the retry loop in alterTableProperties: attempt 1
         // hits BadVersion, attempt 2 re-reads a fresh version and commits successfully.
+        // 中文解释：替身只拒绝第一次提交并记录次数，重试中的读取和后续提交仍使用真实 ZK。
         AtomicInteger commitCalls = new AtomicInteger();
         MetadataManager retryMetadataManager =
                 metadataManagerOver(zkClientFailingCommits(1, commitCalls));
@@ -671,6 +688,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterBucketNumFailsAfterMaxRetries() throws Exception {
+        // 中文解释：让所有 ZK 提交都产生版本冲突，验证达到 3 次尝试后报告失败，且表默认桶数仍为原值。
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_alter_bucket_num_retry_exhaust");
         int originalBucketCount = 4;
         metadataManager.createTable(
@@ -699,6 +717,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterBackfillRejectsPartitionMissingRegistration() throws Exception {
+        // 中文解释：模拟分区名仍可列出但注册节点读取为空，验证无法完整回填时拒绝 ALTER，避免部分旧分区误用新默认值。
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_alter_bucket_num_missing_reg");
         int originalBucketCount = 4;
         String victimPartition = "2024-01";
@@ -732,6 +751,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterBackfillRejectsPartitionMissingAssignment() throws Exception {
+        // 中文解释：为缺少显式桶数的旧分区隐藏 assignment，验证无法推导原布局时终止 ALTER，保留原表默认值。
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_alter_bucket_num_missing_assign");
         int originalBucketCount = 4;
         String victimPartition = "2024-02";
@@ -761,6 +781,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterRetriesOnConcurrentPartitionDeleteNoNode() throws Exception {
+        // 中文解释：在首次提交处删除分区并注入 NoNode，验证表仍存在时可刷新状态重试，最终改桶数成功且已删除分区不会复活。
         // A partition deleted after the backfill enumeration but before the transaction commit
         // makes the commit fail with NoNode. The ALTER must re-read the metadata, skip the
         // vanished partition on retry, and succeed — not fail permanently.
@@ -787,6 +808,7 @@ class AlterBucketNumTest {
                 false,
                 originalBucketCount);
 
+        // 中文解释：在提交阶段抛 NoNode，同时实际删除分区，使下一次重读能看到不同分区集合。
         MetadataManager noNodeManager =
                 metadataManagerOver(
                         zkClientNoNodeOnce(
@@ -813,6 +835,7 @@ class AlterBucketNumTest {
 
     @Test
     void testAlterFailsCleanlyWhenTableDeletedMidAlter() throws Exception {
+        // 中文解释：在首次提交处删除整表并注入 NoNode，验证返回 TableNotExistException，而不是把永久删除当作可重试分区冲突。
         // When the table itself is dropped while an ALTER is in flight, the next retry must
         // surface a clear TableNotExistException instead of an opaque ZK error.
         TablePath tablePath = TablePath.of(DEFAULT_DB, "test_alter_table_gone");
@@ -950,6 +973,7 @@ class AlterBucketNumTest {
      * A ZK client sharing the test connection whose bucket-count commit throws BadVersion for the
      * first {@code failures} calls (counted in {@code commitCalls}) and delegates afterwards.
      */
+    // 中文解释：包装共享测试连接，仅在指定次数内拒绝提交；超过次数后委托真实 ZK，用于验证重读与重试边界。
     private static ZooKeeperClient zkClientFailingCommits(int failures, AtomicInteger commitCalls)
             throws Exception {
         Configuration wrapperConfig = new Configuration();
@@ -1015,6 +1039,7 @@ class AlterBucketNumTest {
      * first bucket-count commit and then delegates, giving a deterministic interleaving without
      * injecting a failure.
      */
+    // 中文解释：首次提交前执行回调后立即委托真实事务，提供确定的操作交错点，本身不注入提交异常。
     private static ZooKeeperClient zkClientRunningBeforeFirstCommit(RunnableWithException action)
             throws Exception {
         Configuration wrapperConfig = new Configuration();

@@ -72,6 +72,7 @@ public class AppendOnlyWriter extends RecordWriter<InternalRow> {
     }
 
     @SuppressWarnings("unchecked")
+    // 中文解释：从调用方传入的表视图创建底层 writer，因而沿用 PaimonLakeWriter 为本次写入准备的桶数选项。
     private static TableWriteImpl<InternalRow> buildTableWrite(FileStoreTable fileStoreTable) {
         TableWriteImpl<InternalRow> tableWrite =
                 (TableWriteImpl<InternalRow>)

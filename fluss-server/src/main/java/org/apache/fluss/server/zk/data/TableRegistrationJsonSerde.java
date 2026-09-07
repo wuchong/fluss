@@ -163,6 +163,7 @@ public class TableRegistrationJsonSerde
 
         // When deserializing from a legacy version, the bucket layout epoch may not exist;
         // read it as 0 (the table has never been ALTERed).
+        // 中文解释：旧表注册缺少 epoch 时解析为 0；新注册显式写入该值，使重启恢复后仍知道表是否发生过布局变更。
         long bucketCountEpoch =
                 node.has(BUCKET_LAYOUT_EPOCH) ? node.get(BUCKET_LAYOUT_EPOCH).asLong() : 0L;
 

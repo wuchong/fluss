@@ -244,6 +244,7 @@ class MultiTableWriterImpl implements MultiTableWriter {
                 base.getComment().orElse(null),
                 base.getCreatedTime(),
                 base.getModifiedTime(),
+                // 中文解释：多表写入重建 TableInfo 时也传递布局版本，避免仅改写配置就把已扩缩容表误标为 epoch 0。
                 base.getBucketCountEpoch());
     }
 

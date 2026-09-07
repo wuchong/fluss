@@ -155,6 +155,7 @@ public class IcebergLakeCatalog implements LakeCatalog {
     @Override
     public void alterTable(TablePath tablePath, List<TableChange> tableChanges, Context context)
             throws TableNotExistException {
+        // 中文解释：Iceberg 尚未实现此布局变更入口，在湖端修改前明确拒绝，避免静默忽略 bucket.num。
         for (TableChange change : tableChanges) {
             if (change instanceof TableChange.SetOption
                     && "bucket.num".equals(((TableChange.SetOption) change).getKey())) {

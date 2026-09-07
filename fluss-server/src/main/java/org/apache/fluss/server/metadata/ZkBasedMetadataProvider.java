@@ -105,6 +105,7 @@ public abstract class ZkBasedMetadataProvider implements MetadataProvider {
                             (partitionId, bucketMetadataList) -> {
                                 long tableId = partitionId2TableId.get(partitionId);
                                 String partitionName = partitionId2PartitionName.get(partitionId);
+                                // 中文解释：这里读取完整的分区 assignment 并组装桶列表，因而可用列表长度提供该分区实际桶数。
                                 PartitionMetadata partitionMetadata =
                                         new PartitionMetadata(
                                                 tableId,

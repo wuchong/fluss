@@ -415,6 +415,7 @@ public class PushdownUtils {
         List<CompletableFuture<Long>> list = new ArrayList<>();
         for (@Nullable PartitionInfo info : partitionInfos) {
             String partitionName = info != null ? info.getPartitionName() : null;
+            // 中文解释：count 下推逐分区计算日志 offset 区间，避免旧分区越界请求或新分区少计。
             int partitionBucketCount = PartitionInfo.bucketCountOrDefault(info, tableBucketCount);
             Collection<Integer> buckets =
                     IntStream.range(0, partitionBucketCount).boxed().collect(Collectors.toList());

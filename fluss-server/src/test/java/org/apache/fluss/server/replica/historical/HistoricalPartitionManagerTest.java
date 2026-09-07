@@ -892,6 +892,7 @@ class HistoricalPartitionManagerTest extends ReplicaTestBase {
                                         INITIAL_BUCKET_EPOCH),
                                 3,
                                 0L)),
+                // 中文解释：等待带有效路由布局的升主回调成功后再进行历史查询，使后续故障注入不混入副本尚未就绪的问题。
                 leaderFuture::complete);
         assertThat(leaderFuture.get(10, TimeUnit.SECONDS))
                 .containsOnly(new NotifyLeaderAndIsrResultForBucket(TABLE_BUCKET));

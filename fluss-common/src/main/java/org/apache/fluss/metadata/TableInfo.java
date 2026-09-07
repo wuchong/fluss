@@ -68,6 +68,7 @@ public final class TableInfo {
 
     private final long createdTime;
     private final long modifiedTime;
+    // 中文解释：这是表级布局版本而非某个分区的桶数；非零值表明不能再假设所有分区与当前默认桶数相同。
     private final long bucketCountEpoch;
 
     private int[] cachedStatsIndexMapping = null;

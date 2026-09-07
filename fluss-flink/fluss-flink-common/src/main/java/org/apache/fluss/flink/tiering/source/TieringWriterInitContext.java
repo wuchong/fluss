@@ -88,6 +88,7 @@ public class TieringWriterInitContext implements WriterInitContext {
         this.splitIndex = splitIndex;
         this.tieringRoundTimestamp = tieringRoundTimestamp;
         this.ioTmpDirs = ioTmpDirs;
+        // 中文解释：非分区表沿用表桶数；分区表必须明确提供实际布局，缺失时在创建 writer 前失败，不能默认套用新桶数。
         if (tableBucket.getPartitionId() == null) {
             this.bucketCount = tableInfo.getNumBuckets();
         } else {

@@ -215,6 +215,7 @@ public class CoordinatorRequestBatch {
         // Leader activation requires the routing bucket count; skip the bucket when the
         // coordinator context has no assignment for it (e.g. raced by a drop) instead of
         // sending a notification without the count, which the TabletServer would reject.
+        // 中文解释：角色通知同时携带实际布局，使新 leader 激活时立即具备路由校验依据，无需等待独立元数据广播。
         Integer bucketCount = getBucketCount(tableBucket);
         if (bucketCount == null) {
             coordinatorContext.addPendingLeaderActivation(tableBucket);
@@ -277,6 +278,7 @@ public class CoordinatorRequestBatch {
         } else {
             assignment = coordinatorContext.getTableAssignment(tableBucket.getTableId());
         }
+        // 中文解释：从对应分区的 assignment 推导实际桶数；空 assignment 表示尚无可靠布局，不能发送虚假的 0 桶通知。
         return assignment.isEmpty() ? null : assignment.size();
     }
 

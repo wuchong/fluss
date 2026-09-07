@@ -292,6 +292,7 @@ class TableManagerTest {
 
     @Test
     void testCreateAndDropPartition() throws Exception {
+        // 中文解释：创建分区并检查副本上线，再模拟各副本删除完成，验证删除恢复流程最终清理 ZK assignment 和内存副本状态。
         // create a table
         long tableId = zookeeperClient.getTableIdAndIncrement();
         TableAssignment assignment = TableAssignment.builder().build();

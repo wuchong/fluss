@@ -319,6 +319,7 @@ class IcebergTieringTest {
 
                     @Override
                     public int bucketCount() {
+                        // 中文解释：现有 tiering 夹具保持单一布局，新增方法仅提供原表桶数，不构成 Iceberg 扩缩容验证。
                         return tableInfo.getNumBuckets();
                     }
                 });

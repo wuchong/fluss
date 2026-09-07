@@ -781,6 +781,7 @@ public class FlinkSourceEnumerator
         return flussOnlyBatchSplitGenerator.generate();
     }
 
+    // 中文解释：主键批读同样逐分区枚举实际桶数；无分区占位时才使用表本身的唯一布局。
     private List<SourceSplitBase> buildKvBatchSplits(@Nullable PartitionInfo partitionInfo) {
         // A partition keeps the bucket count it was created with, so its buckets must be
         // enumerated by that count; the table-level count only applies to a non-partitioned
@@ -1835,6 +1836,7 @@ public class FlinkSourceEnumerator
     /** A container class to hold the partition id and partition name. */
     private static class Partition {
         /** Marks comparison-only instances that do not carry a bucket count. */
+        // 中文解释：仅用于集合差异比较和删除处理的分区对象没有布局，不能误用这些占位对象来生成 split。
         private static final int NO_BUCKET_COUNT = -1;
 
         final long partitionId;

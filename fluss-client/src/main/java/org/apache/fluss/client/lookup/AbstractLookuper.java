@@ -83,6 +83,7 @@ abstract class AbstractLookuper implements Lookuper {
      * when the cluster metadata has it, otherwise the shared fallback policy (safe table-level
      * count only when the table was never rescaled; fail loud otherwise).
      */
+    // 中文解释：点查与前缀查询共享缺失布局的处理策略：有分区实际值就用实际值，缺失时由 epoch 决定是否允许回退。
     protected int resolvePartitionBucketCount(TablePartition tablePartition) {
         return metadataUpdater
                 .getCluster()

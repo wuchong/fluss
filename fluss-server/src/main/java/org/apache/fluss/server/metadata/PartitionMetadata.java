@@ -42,6 +42,7 @@ public class PartitionMetadata {
     private final String partitionName;
     private final long partitionId;
     private final List<BucketMetadata> bucketMetadataList;
+    // 中文解释：桶状态列表在增量广播中可能不完整，因此显式布局字段不能简单等同于每条消息内的 bucket 列表长度。
     @Nullable private final Integer bucketCount;
 
     public PartitionMetadata(

@@ -128,6 +128,7 @@ class LakeSplitGeneratorTest {
 
     @Test
     void testPrimaryKeyOutOfRangeLakeBucketFailsLoud() throws Exception {
+        // 中文解释：构造只有 2 桶的主键分区却让湖 split 指向桶 5，验证联合读取规划立即报错，避免越界湖数据被静默遗漏。
         // lake split lands in bucket 5, which is outside [0, 2)
         LakeSplitGenerator generator = createGenerator(2, 5);
         assertThatThrownBy(generator::generateHybridLakeFlussSplits)
@@ -138,6 +139,7 @@ class LakeSplitGeneratorTest {
 
     @Test
     void testPrimaryKeyInRangeLakeBucketSucceeds() throws Exception {
+        // 中文解释：让分区实际桶数为 4 且不同于表默认值，验证合法湖桶能生成覆盖 0 至 3 的混合读取 split。
         // lake split lands in bucket 1, which is within [0, 4)
         int partitionBucketCount = 4;
         LakeSplitGenerator generator = createGenerator(partitionBucketCount, 1);

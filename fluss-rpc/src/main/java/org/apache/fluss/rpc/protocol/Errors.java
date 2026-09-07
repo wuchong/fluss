@@ -287,6 +287,7 @@ public enum Errors {
             73,
             "Historical partition request is throttled because too many historical requests are in flight.",
             HistoricalPartitionThrottledException::new),
+    // 中文解释：新增独立协议错误表示路由桶数失效，Java 客户端据此清理布局缓存，并区别处理已经固定 bucketId 的批次。
     STALE_METADATA(
             74,
             "The bucket count in the request does not match the server's actual bucket count. The "

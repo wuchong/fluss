@@ -203,6 +203,7 @@ public class TableRegistration {
      * a partitioned table, the new count applies to partitions created after this ALTER; existing
      * partitions retain their actual bucket counts in their partition registrations.
      */
+    // 中文解释：新注册同时替换默认桶数并递增布局版本；真正持久化及与旧分区回填的原子性由 ZK 事务保证。
     public TableRegistration withBucketCount(int newBucketCount) {
         final long currentMillis = System.currentTimeMillis();
         return new TableRegistration(

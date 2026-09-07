@@ -43,6 +43,7 @@ public class LookupQuery extends AbstractLookupQuery<byte[]> {
             boolean insertIfNotExists,
             @Nullable String originalPartitionName,
             int bucketCount) {
+        // 中文解释：普通点查和历史点查都保留路由桶数；originalPartitionName 则让历史查询能定位原始湖分区。
         super(tablePath, tableBucket, key, originalPartitionName, bucketCount);
         this.future = new CompletableFuture<>();
         this.insertIfNotExists = insertIfNotExists;

@@ -67,6 +67,7 @@ public class ServerMetadataSnapshot {
 
     // tableId -> bucketCountEpoch; a TabletServer keeps the latest value and ignores a lower
     // epoch to prevent an older bucket layout (ALTER bucket.num) from replacing a newer one.
+    // 中文解释：快照同时保存分区布局和表 epoch，路由读取可从已发布快照取得版本，无需直接访问 ZK。
     private final Map<Long, Long> bucketCountEpochByTableId;
 
     public ServerMetadataSnapshot(

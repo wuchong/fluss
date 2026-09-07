@@ -74,6 +74,7 @@ public interface LakeTableLookuper extends AutoCloseable {
     /** Context for a lake table point lookup. */
     final class LookupContext {
         private final ResolvedPartitionSpec partitionSpec;
+        // 中文解释：null 表示湖端必须根据原始分区的文件布局自行计算桶，不能把历史分区的物理 bucketId 直接当作湖桶。
         private final @Nullable Integer bucketId;
         private final short schemaId;
         private final RowType valueRowType;

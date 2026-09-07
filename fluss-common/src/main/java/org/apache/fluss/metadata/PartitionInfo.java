@@ -40,6 +40,7 @@ public class PartitionInfo {
      * that did not persist a per-partition bucket count, the table-level bucket count is filled in
      * at construction time.
      */
+    // 中文解释：对外提供已解析的分区桶数，读者据此枚举该分区真实存在的桶，而不把当前表默认值套到所有分区。
     private final int bucketCount;
 
     public PartitionInfo(
@@ -95,6 +96,7 @@ public class PartitionInfo {
      */
     public static int bucketCountOrDefault(
             @Nullable PartitionInfo partitionInfo, int tableBucketCount) {
+        // 中文解释：此工具只处理调用者提供的空分区占位，不检查表 epoch；缺失元数据是否允许回退需由上层保证。
         return partitionInfo != null ? partitionInfo.getBucketCount() : tableBucketCount;
     }
 

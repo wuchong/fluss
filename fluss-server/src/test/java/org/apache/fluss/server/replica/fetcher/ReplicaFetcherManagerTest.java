@@ -74,6 +74,7 @@ class ReplicaFetcherManagerTest extends ReplicaTestBase {
 
     @Test
     void testAddAndRemoveBucket() {
+        // 中文解释：先建立 follower 再为桶分配 fetcher，验证移除桶只清除抓取状态，显式清理空闲线程后才移除对应 fetcher。
         int numFetchers = 2;
         ReplicaFetcherManager fetcherManager =
                 new TestingReplicaFetcherManager(TABLET_SERVER_ID, replicaManager, fetcherThread);
@@ -115,6 +116,7 @@ class ReplicaFetcherManagerTest extends ReplicaTestBase {
         assertThat(thread).isEqualTo(fetcherThread);
         assertThat(fetcherThread.fetchStatus(tb).isPresent()).isTrue();
 
+        // 中文解释：移除桶和关闭空闲 fetcher 是两个生命周期步骤，分别断言可避免把线程复用误认为泄漏。
         fetcherManager.removeFetcherForBuckets(Collections.singleton(tb));
         // the fetcher thread will not be moved out from the map.
         assertThat(fetcherThreadMap.size()).isEqualTo(1);
@@ -129,6 +131,7 @@ class ReplicaFetcherManagerTest extends ReplicaTestBase {
 
     @Test
     void testDoesNotAddFetcherWhenFollowerHasNoLeader() {
+        // 中文解释：发送 NO_LEADER 的 follower 通知，验证副本状态转换可以成功，但不会启动没有有效目标的复制抓取线程。
         TableBucket tb = new TableBucket(DATA1_TABLE_ID, 0);
         AtomicReference<List<NotifyLeaderAndIsrResultForBucket>> result = new AtomicReference<>();
 

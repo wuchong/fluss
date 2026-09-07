@@ -597,6 +597,7 @@ public class LogFetcher implements Closeable {
                                 .setFetchOffset(offset)
                                 .setMaxFetchBytes(maxBucketFetchBytes);
                 if (tb.getPartitionId() != null) {
+                    // 中文解释：每个日志抓取桶分别携带其分区布局，允许同一请求批次涵盖不同桶数的分区。
                     fetchLogReqForBucket.setPartitionId(tb.getPartitionId());
                     metadataUpdater
                             .getCluster()

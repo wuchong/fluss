@@ -56,6 +56,7 @@ public class PaimonLakeWriter implements LakeWriter<PaimonWriteResult>, Supports
         // Only Fixed Bucket tables (bucket keys non-empty) carry a positive BUCKET in Paimon.
         // Overriding on an Unaware Bucket table (BUCKET = -1) would change its bucket mode.
         // The context always resolves the actual bucket count.
+        // 中文解释：仅固定桶模式覆盖 writer 视图的桶数；无分桶键表保持 unaware 模式，不能用正数把其模式改掉。
         Integer bucketOverride =
                 !writerInitContext.tableInfo().getBucketKeys().isEmpty()
                         ? writerInitContext.bucketCount()
@@ -157,6 +158,7 @@ public class PaimonLakeWriter implements LakeWriter<PaimonWriteResult>, Supports
             if (bucketOverride != null) {
                 // copy(Map) rejects BUCKET as immutable, so swap it in via a schema copy,
                 // which only rebuilds the in-memory table view.
+                // 中文解释：复制的是本 writer 使用的内存 schema 视图，不改 Catalog 默认值，也不在此处重新计算记录的 bucketId。
                 Map<String, String> schemaOptions = new HashMap<>(table.schema().options());
                 schemaOptions.put(CoreOptions.BUCKET.key(), String.valueOf(bucketOverride));
                 table = table.copy(table.schema().copy(schemaOptions));

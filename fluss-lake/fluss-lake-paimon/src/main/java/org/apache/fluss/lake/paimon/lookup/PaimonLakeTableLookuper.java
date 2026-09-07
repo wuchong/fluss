@@ -365,6 +365,7 @@ public class PaimonLakeTableLookuper implements LakeTableLookuper {
 
     private @Nullable byte[] lookupInternal(byte[] key, LookupContext context) {
         org.apache.paimon.data.BinaryRow partition = getPartition(context);
+        // 中文解释：先为原始湖分区解析真实桶位置，再执行点查；该分区尚无湖数据时返回空，而不是猜一个桶。
         Integer bucket = resolveLakeBucket(key, partition, context);
         if (bucket == null) {
             return null;
@@ -395,6 +396,7 @@ public class PaimonLakeTableLookuper implements LakeTableLookuper {
      */
     private @Nullable Integer resolveLakeBucket(
             byte[] key, org.apache.paimon.data.BinaryRow partition, LookupContext context) {
+        // 中文解释：调用者确认未扩缩容时可直接使用物理桶；否则从该分区数据文件的 totalBuckets 重建湖端路由。
         if (context.bucketId() != null) {
             return context.bucketId();
         }
@@ -427,6 +429,7 @@ public class PaimonLakeTableLookuper implements LakeTableLookuper {
                     if (totalBuckets.isEmpty()) {
                         return null;
                     }
+                    // 中文解释：同一分区若混有多种桶数，就无法唯一确定某个键的文件位置，因此拒绝返回可能不完整的点查结果。
                     if (totalBuckets.size() > 1) {
                         throw new KvStorageException(
                                 "Cannot look up historical data of table "
@@ -447,6 +450,7 @@ public class PaimonLakeTableLookuper implements LakeTableLookuper {
      */
     private byte[] deriveBucketKey(byte[] key, LookupContext context) {
         List<String> bucketKeys = fileStoreTable.schema().bucketKeys();
+        // 中文解释：默认分桶键可复用点查主键字节；分桶键只是主键子集时需解码并按湖编码重新提取，不能哈希整个主键。
         if (bucketKeys.equals(trimmedPrimaryKeys)) {
             return key;
         }

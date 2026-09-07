@@ -99,6 +99,7 @@ public class LimitBatchScanner implements BatchScanner {
             this.fieldGetters[i] = InternalRow.createDeepFieldGetter(rowType.getTypeAt(i), i);
         }
 
+        // 中文解释：LIMIT 请求从此快照读取布局；后面的分区刷新不会回填已构造请求中的缺失字段。
         Cluster cluster = metadataUpdater.getCluster();
         LimitScanRequest limitScanRequest =
                 new LimitScanRequest()

@@ -203,6 +203,7 @@ public class MetadataUtils {
                                     tablePath, tableId, null, null, pbBucketMetadataList));
                     // An empty bucket list means the assignment is not generated yet; keeping the
                     // entry out lets callers fall back to the table-level count instead of 0.
+                    // 中文解释：非分区表由实际 bucket 列表推导桶数；空列表可能只是尚未分配，不能缓存为有效的 0。
                     if (!pbBucketMetadataList.isEmpty()) {
                         newBucketCountByTable.put(tableId, pbBucketMetadataList.size());
                     }
@@ -232,6 +233,7 @@ public class MetadataUtils {
                     // a non-positive count is not a valid bucket layout (an old server omits the
                     // field, a new one may still report 0 before the assignment exists), so keep
                     // the entry out and let callers fall back to the table-level count
+                    // 中文解释：只缓存正数的显式分区布局，旧服务端省略字段和未就绪的 0 都保留为未知，交由调用者执行回退策略。
                     if (pbPartitionMetadata.hasBucketCount()
                             && pbPartitionMetadata.getBucketCount() > 0) {
                         newBucketCountByPartition.put(

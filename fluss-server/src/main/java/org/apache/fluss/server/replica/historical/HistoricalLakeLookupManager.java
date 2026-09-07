@@ -364,6 +364,7 @@ class HistoricalLakeLookupManager implements AutoCloseable {
 
         // The request's bucket id only routes the request. It matches the lake layout only while
         // the table was never rescaled; otherwise the lake lookuper resolves the bucket itself.
+        // 中文解释：历史分区的物理桶只负责把请求送到服务端；表曾扩缩容时用 null 要求湖查询按原始分区文件重新分桶。
         Integer lakeBucketId =
                 tableInfo.getBucketCountEpoch() == 0 ? tableBucket.getBucket() : null;
 

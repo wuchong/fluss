@@ -225,6 +225,7 @@ public final class TabletService extends RpcServiceBase implements TabletServerG
     public CompletableFuture<ProduceLogResponse> produceLog(ProduceLogRequest request) {
         authorizeTable(WRITE, request.getTableId());
         long tableId = request.getTableId();
+        // 中文解释：先逐桶收集陈旧路由错误并排除这些桶，再追加其余记录，保证路由拒绝发生在写入前。
         Map<TableBucket, ProduceLogResultForBucket> routingErrors = new HashMap<>();
         collectStaleRoutingErrors(
                 request.getBucketsReqsList(),
@@ -292,6 +293,7 @@ public final class TabletService extends RpcServiceBase implements TabletServerG
      * whenever that cache lags behind or the table has been rescaled.
      */
     private static boolean isFromClient(int followerServerId) {
+        // 中文解释：负值标识客户端请求；复制请求使用 Coordinator 分配的桶身份，不按客户端桶数规则拒绝它们。
         return followerServerId < 0;
     }
 
@@ -379,6 +381,7 @@ public final class TabletService extends RpcServiceBase implements TabletServerG
     public CompletableFuture<PutKvResponse> putKv(PutKvRequest request) {
         authorizeTable(WRITE, request.getTableId());
         long tableId = request.getTableId();
+        // 中文解释：主键批次也先做逐桶路由校验，坏布局不进入 KV 写入，同批其他分区仍可独立成功。
         Map<TableBucket, PutKvResultForBucket> routingErrors = new HashMap<>();
         collectStaleRoutingErrors(
                 request.getBucketsReqsList(),
@@ -1097,6 +1100,7 @@ public final class TabletService extends RpcServiceBase implements TabletServerG
      * <p>Only requests that carry a per-bucket routing count need this. A request whose count is
      * request-scoped (see {@link #listOffsets}) fails or succeeds as a whole by construction.
      */
+    // 中文解释：把布局失效收集成逐桶结果，防止一个分区的陈旧路由使同批其他合法分区一并失败。
     private <P, K extends ResultForBucket> void collectStaleRoutingErrors(
             List<P> bucketReqs,
             Function<P, TableBucket> toTableBucket,
@@ -1125,6 +1129,7 @@ public final class TabletService extends RpcServiceBase implements TabletServerG
         if (routingErrors.isEmpty()) {
             return results;
         }
+        // 中文解释：将真正执行的桶结果与预检拒绝的桶结果合并，确保响应覆盖客户端请求的每一个桶。
         List<K> merged = new ArrayList<>(results.size() + routingErrors.size());
         merged.addAll(results);
         merged.addAll(routingErrors.values());

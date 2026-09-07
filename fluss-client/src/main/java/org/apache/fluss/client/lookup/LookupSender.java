@@ -566,6 +566,7 @@ class LookupSender implements Runnable {
             invalidTableOrPartitions(tableOrPartitions);
         }
 
+        // 中文解释：查询对象的 bucketId 已固定，布局失效后直接失败该 Future，让上层重新发起查询并重新分桶。
         if (error.error() == Errors.STALE_METADATA) {
             for (AbstractLookupQuery<?> lookup : lookups) {
                 lookup.future().completeExceptionally(exception);

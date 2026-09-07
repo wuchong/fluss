@@ -316,6 +316,7 @@ class AutoPartitionManagerTest {
     @ParameterizedTest
     @MethodSource("parameters")
     void testAddPartitionedTable(TestParams params) throws Exception {
+        // 中文解释：通过手工时钟及可控调度器推进自动分区窗口，参数化检查各时点的分区集合和远端目录，并确认停止管理后集合不再变化。
         ManualClock clock = new ManualClock(params.startTimeMs);
         ManuallyTriggeredScheduledExecutorService periodicExecutor =
                 new ManuallyTriggeredScheduledExecutorService();
@@ -384,6 +385,7 @@ class AutoPartitionManagerTest {
             autoPartitionManager.removePartition(tableId, partitionName);
         }
 
+        // 中文解释：手工推进时间后再触发周期任务，隔离日期计算与线程调度，使窗口边界可重复验证。
         clock.advanceTime(params.advanceDuration);
         periodicExecutor.triggerPeriodicScheduledTasks();
         partitions = zookeeperClient.getPartitionRegistrations(tablePath);
@@ -405,6 +407,7 @@ class AutoPartitionManagerTest {
 
     @Test
     void testDayFormatWithDashes() throws Exception {
+        // 中文解释：使用带短横线的日期格式，分阶段推进时间并触发调度，验证预创建和过期清理仍产生正确的日期分区集合。
         ZonedDateTime startTime =
                 LocalDateTime.parse("2024-09-10T00:00:00").atZone(ZoneId.systemDefault());
         ManualClock clock = new ManualClock(startTime.toInstant().toEpochMilli());
@@ -490,6 +493,7 @@ class AutoPartitionManagerTest {
 
     @Test
     void testMaxPartitions() throws Exception {
+        // 中文解释：设置最多 10 个分区并混入手工创建的未来分区，再推进自动创建窗口，验证总数限制会阻止继续创建超额分区。
         int expectPartitionNumber = 10;
         Configuration config = new Configuration();
         config.set(ConfigOptions.MAX_PARTITION_NUM, expectPartitionNumber);
@@ -746,6 +750,7 @@ class AutoPartitionManagerTest {
      */
     @Test
     void testAutoCreatedPartitionUsesUpdatedBucketCount() throws Exception {
+        // 中文解释：先创建 4 桶自动分区，再直接更新 ZK 表默认值并触发刷新和时钟推进，验证旧分区仍为 4 桶、新日期分区为 8 桶。
         ZonedDateTime startTime =
                 LocalDateTime.parse("2024-09-10T00:00:00").atZone(ZoneId.systemDefault());
         long startMs = startTime.toInstant().toEpochMilli();
@@ -782,6 +787,7 @@ class AutoPartitionManagerTest {
         // simulate ALTER bucket.num 4 -> 8: a real ALTER first persists the new table-level bucket
         // count to ZK (the authoritative source auto-partition reads), then the coordinator
         // refreshes the cached TableInfo.
+        // 中文解释：直接修改持久化注册来模拟默认布局已更新，再触发管理器的元数据刷新；旧 TableInfo 不应决定下一分区布局。
         TableRegistration reg = zookeeperClient.getTable(tablePath).get();
         zookeeperClient.updateTable(tablePath, reg.withBucketCount(8));
         TableInfo updatedTable = createUpdatedBucketCountTableInfo(table, 8);
@@ -835,6 +841,7 @@ class AutoPartitionManagerTest {
 
     @Test
     void testAutoDropPartitionDoesNotMutateObservedKvLeaderReplicaCount() throws Exception {
+        // 中文解释：先设置容量控制器观察到的 KV leader 数量，再触发分区自动过期，验证删除流程不会自行改写这份观测统计。
         ZonedDateTime startTime =
                 LocalDateTime.parse("2025-04-26T00:00:00").atZone(ZoneId.systemDefault());
         ManualClock clock = new ManualClock(startTime.toInstant().toEpochMilli());
@@ -876,6 +883,7 @@ class AutoPartitionManagerTest {
         autoPartitionManager.addPartition(table.getTableId(), "2025042601");
         capacityController.updateObservedKvLeaderReplicaCount((long) table.getNumBuckets() * 2);
 
+        // 中文解释：推进时间仅触发分区过期，容量控制器的观察值应由独立观测更新，而不是删除动作直接扣减。
         clock.advanceTime(Duration.ofHours(2));
         periodicExecutor.triggerPeriodicScheduledTasks();
 

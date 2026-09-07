@@ -144,6 +144,7 @@ public class ClientRpcMessageUtils {
         readyBatches.forEach(
                 readyBatch -> {
                     TableBucket tableBucket = readyBatch.tableBucket();
+                    // 中文解释：写批次已经完成分桶，协议必须携带当时使用的桶数，不能在发送阶段替换成新缓存值。
                     PbProduceLogReqForBucket pbProduceLogReqForBucket =
                             request.addBucketsReq()
                                     .setBucketId(tableBucket.getBucket())
@@ -204,6 +205,7 @@ public class ClientRpcMessageUtils {
         readyWriteBatches.forEach(
                 readyBatch -> {
                     TableBucket tableBucket = readyBatch.tableBucket();
+                    // 中文解释：主键写入与日志追加共用同样的布局校验语义，服务端会在真正追加记录之前检查桶数。
                     PbPutKvReqForBucket pbPutKvReqForBucket =
                             request.addBucketsReq()
                                     .setBucketId(tableBucket.getBucket())
@@ -243,6 +245,7 @@ public class ClientRpcMessageUtils {
                     }
                     // Carry the bucket count the bucketId was calculated with so the server can
                     // validate it; 0 means unknown (legacy) and leaves the field unset.
+                    // 中文解释：发送查询时使用批次固定的桶数；未知值 0 保持字段缺省，不伪装成有效的零桶布局。
                     if (batch.getBucketCount() > 0) {
                         pbLookupReqForBucket.setRoutingBucketCount(batch.getBucketCount());
                     }
@@ -694,6 +697,7 @@ public class ClientRpcMessageUtils {
      * answer. Shared by the write path (bucket assignment), the lookup path (bucket routing), and
      * the admin path (partition info resolution) so the policy lives in one place.
      */
+    // 中文解释：只有表元数据的 epoch 为 0 才采用表默认值；已扩缩容而分区桶数未知时拒绝猜测，以免写错桶或查出假空值。
     public static int fallbackBucketCountOrFail(TableInfo tableInfo, Object target) {
         long epoch = tableInfo.getBucketCountEpoch();
         if (epoch > 0) {

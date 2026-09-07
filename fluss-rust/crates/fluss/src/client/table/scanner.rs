@@ -2357,6 +2357,7 @@ impl LogFetcher {
                             bucket_id: bucket.bucket_id(),
                             fetch_offset: offset,
                             max_fetch_bytes: self.fetch_max_bytes_for_bucket,
+                            // 中文解释：当前 Rust 路径仍不发送路由桶数，保留旧请求形式；这没有实现扩缩容后的分区路由支持。
                             routing_bucket_count: None,
                         };
 

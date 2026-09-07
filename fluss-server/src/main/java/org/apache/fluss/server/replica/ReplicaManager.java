@@ -2503,6 +2503,7 @@ public class ReplicaManager implements ServerReconfigurable {
                                 scannerManager);
                 // Initialize the routing state before the replica becomes visible, so a
                 // ready leader always has its routing bucket count ready.
+                // 中文解释：在副本发布到可见集合之前初始化通知中的布局，使可服务的 leader 已拥有路由桶数。
                 replica.updateRoutingState(data);
                 if (!existingLogTabletOpt.isPresent()) {
                     localDiskManager.recordReplicaLoad(dataDir, isKvTable);
@@ -2559,10 +2560,12 @@ public class ReplicaManager implements ServerReconfigurable {
         // only they can misroute a key when the client routes with a stale bucket count. A table
         // without a bucket key (round-robin/sticky) may place a record in any bucket, so a stale
         // routing count is harmless and must not fail the write.
+        // 中文解释：只有哈希分布要求一个键确定地落到某个桶；无分桶键表不以桶位置表达键语义，因此跳过此校验。
         if (!replica.getTableInfo().hasBucketKey()) {
             return;
         }
 
+        // 中文解释：没有有效桶数字段的旧客户端只在未扩缩容表上兼容；非零 epoch 表明不能再相信其表级路由假设。
         if (routingBucketCount <= 0) {
             // Legacy client (no bucket count in request): reject only when a rescale is known,
             // because then the bucketId may come from an outdated count.
@@ -2600,6 +2603,7 @@ public class ReplicaManager implements ServerReconfigurable {
         Long replicaEpoch = replica.getBucketCountEpoch();
         long cachedEpoch =
                 metadataCache.getBucketCountEpoch(replica.getTableBucket().getTableId()).orElse(0L);
+        // 中文解释：ALTER 不必重新激活已有副本，因此取通知值与缓存值的最大 epoch，让旧客户端及时感知新布局约束。
         return Math.max(replicaEpoch == null ? 0L : replicaEpoch, cachedEpoch);
     }
 

@@ -739,6 +739,7 @@ public final class FlussClusterExtension
                     zooKeeperClient.getPartitionRegistrations(tablePath);
             for (PartitionRegistration partition : partitions.values()) {
                 // partitions diverge from the table-level count after ALTER bucket.num
+                // 中文解释：测试集群等待副本就绪也要逐分区枚举实际桶数，否则扩容后会等待旧分区根本不存在的桶。
                 int partitionBucketCount =
                         partition.getBucketCountOrDefault(
                                 bucketCount, tableRegistration.bucketCountEpoch);

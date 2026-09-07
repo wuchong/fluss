@@ -510,6 +510,7 @@ public class ReplicaTestBase {
     }
 
     /** The routing bucket count carried by test notifications; test tables are distributedBy(3). */
+    // 中文解释：基础表统一为 3 桶，角色通知显式提供此值和 epoch 0，避免原有副本测试因缺少新协议字段而无法升主。
     protected static final Integer TEST_ROUTING_BUCKET_COUNT = 3;
 
     protected void makeLeaderAndFollower(List<NotifyLeaderAndIsrData> notifyLeaderAndIsrDataList) {

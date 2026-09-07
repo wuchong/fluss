@@ -469,6 +469,7 @@ public final class RecordAccumulator {
                 writeTarget.partitionId = historicalPartitionId;
                 return true;
             }
+            // 中文解释：排队批次已按原布局编码到某个桶，迁移到历史分区前检查每个批次的桶数，布局不同就由调用者终止。
             if (historicalBucketCount != null) {
                 for (Deque<WriteBatch> deque : writeTarget.batches.values()) {
                     for (WriteBatch batch : deque) {
@@ -839,6 +840,7 @@ public final class RecordAccumulator {
                             schemaId,
                             isHistoricalPartition);
 
+            // 中文解释：新批次保存与 bucketId 同时确定的桶数，后续发送和历史重路由检查都读取这一固定值。
             batch.setBucketCount(bucketCount);
             batch.tryAppend(writeRecord, callback);
             deque.addLast(batch);

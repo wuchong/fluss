@@ -64,6 +64,7 @@ public final class OrphanCleanUtils {
      */
     public static List<TableBucket> enumerateBuckets(
             TableInfo tableInfo, @Nullable PartitionInfo partitionInfo) {
+        // 中文解释：孤儿文件清理也必须按分区实际桶范围枚举，以免扩缩容后把旧表默认范围误用于某个分区。
         int n = PartitionInfo.bucketCountOrDefault(partitionInfo, tableInfo.getNumBuckets());
         List<TableBucket> buckets = new ArrayList<TableBucket>(n);
         long tableId = tableInfo.getTableId();

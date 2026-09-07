@@ -410,6 +410,7 @@ class LanceTieringTest {
 
                     @Override
                     public int bucketCount() {
+                        // 中文解释：现有测试未改变分区布局，因此上下文提供原表桶数，以适配 lake writer 新增接口。
                         return tableInfo.getNumBuckets();
                     }
                 });

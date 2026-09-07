@@ -39,6 +39,7 @@ public class PrefixLookupQuery extends AbstractLookupQuery<List<byte[]>> {
     }
 
     PrefixLookupQuery(TablePath tablePath, TableBucket tableBucket, byte[] prefixKey) {
+        // 中文解释：兼容构造方式以 0 表示未知布局，序列化时省略字段，由服务端结合 epoch 决定是否接受。
         this(tablePath, tableBucket, prefixKey, 0);
     }
 

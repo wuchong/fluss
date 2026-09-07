@@ -301,6 +301,7 @@ impl PartitionInfo {
             partition_id: self.partition_id,
             partition_spec: self.partition_spec.to_pb(),
             remote_data_dir: None,
+            // 中文解释：Rust 当前分区模型未保存实际桶数，转换回协议仍省略该字段，不能据此认为已支持每分区布局。
             bucket_count: None,
         }
     }

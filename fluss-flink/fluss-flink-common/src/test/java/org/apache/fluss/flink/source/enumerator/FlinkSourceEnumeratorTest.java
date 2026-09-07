@@ -387,6 +387,7 @@ class FlinkSourceEnumeratorTest extends FlinkTestBase {
     @Test
     void testRestoreFlussOnlySourceWithLakeSourceDoesNotGenerateLakeSplits(@TempDir Path tempDir)
             throws Throwable {
+        // 中文解释：先保存只读 Fluss 的流式枚举器状态，再带 LakeSource 恢复，验证仍只分配 LogSplit，避免重新读取湖快照。
         long tableId =
                 createTable(DEFAULT_TABLE_PATH, DEFAULT_AUTO_PARTITIONED_LOG_TABLE_DESCRIPTOR);
         ZooKeeperClient zooKeeperClient = FLUSS_CLUSTER_EXTENSION.getZooKeeperClient();
@@ -466,6 +467,7 @@ class FlinkSourceEnumeratorTest extends FlinkTestBase {
             assertThat(restoredEnumerator.snapshotState(1L).getRemainingHybridLakeFlussSplits())
                     .isEmpty();
 
+            // 中文解释：显式执行受控的一次性异步任务，再注册 reader，保证断言检查的是完成规划后的实际分配结果。
             restoredEnumerator.start();
             context.runNextOneTimeCallable();
             context.runNextOneTimeCallable();
@@ -1528,6 +1530,7 @@ class FlinkSourceEnumeratorTest extends FlinkTestBase {
     @ValueSource(booleans = {true, false})
     void testPartitionsExpiredInFlussButExistInLake(
             boolean isPrimaryKeyTable, @TempDir Path tempDir) throws Throwable {
+        // 中文解释：同时模拟湖中独有分区及发现期间过期的混合分区，验证先保留湖数据 split，分配后再发送分区移除事件；覆盖主键和日志表的流读模式。
         int numSubtasks = 3;
         TableDescriptor tableDescriptor =
                 isPrimaryKeyTable
@@ -1620,6 +1623,7 @@ class FlinkSourceEnumeratorTest extends FlinkTestBase {
             enumerator.start();
 
             // Remove the hybrid partition to mock expire after enumerator start
+            // 中文解释：在枚举器启动后删除混合分区，构造湖 split 已规划而 Fluss 分区刚过期的生命周期窗口。
             dropPartitions(
                     zooKeeperClient,
                     DEFAULT_TABLE_PATH,
@@ -1695,6 +1699,7 @@ class FlinkSourceEnumeratorTest extends FlinkTestBase {
             checkAssignmentIgnoreOrder(actualAssignments, expectedAssignments);
 
             // Run periodic partition discovery to trigger handlePartitionsRemoved again
+            // 中文解释：分配后再次发现分区，才检查发给 reader 的移除事件，区分保留湖数据和停止 Fluss 追读两个阶段。
             runPeriodicPartitionDiscovery(workExecutor);
 
             // Verify that PartitionsRemovedEvent is sent
@@ -2071,6 +2076,7 @@ class FlinkSourceEnumeratorTest extends FlinkTestBase {
      * #NEW_BUCKET_NUM}, creates "new" partition, writes rows to both. Returns [tablePath,
      * tableInfo, oldPartitionId, newPartitionId].
      */
+    // 中文解释：真实创建旧分区、ALTER 后再创建新分区，为流读、批读及 tiering 测试统一提供 2 桶和 4 桶并存的环境。
     private Object[] setupRescaledPartitionedTable() throws Exception {
         TablePath tablePath = TablePath.of(DEFAULT_DB, "rescale_split_" + System.nanoTime());
         createTable(tablePath, RESCALE_LOG_TABLE);
@@ -2116,6 +2122,7 @@ class FlinkSourceEnumeratorTest extends FlinkTestBase {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void testFlussSplitsEnumeratePerPartitionBucketCount(boolean streaming) throws Throwable {
+        // 中文解释：在 2 桶旧分区与 4 桶新分区共存时启动流读或批读枚举器，检查分配给 reader 的桶集合分别精确为 0 至 1 和 0 至 3。
         Object[] ctx = setupRescaledPartitionedTable();
         try (MockSplitEnumeratorContext<SourceSplitBase> context =
                         new MockSplitEnumeratorContext<>(3);
@@ -2141,6 +2148,7 @@ class FlinkSourceEnumeratorTest extends FlinkTestBase {
                                 LeaseContext.DEFAULT,
                                 false)) {
             enumerator.start();
+            // 中文解释：流模式依靠周期发现、批模式依靠一次性规划；手动推进各自执行器，避免用真实调度时间驱动断言。
             if (streaming) {
                 runPeriodicPartitionDiscovery(workExecutor);
             } else {
@@ -2177,6 +2185,7 @@ class FlinkSourceEnumeratorTest extends FlinkTestBase {
      */
     @Test
     void testTieringSplitsEnumeratePerPartitionBucketCount() throws Throwable {
+        // 中文解释：复用真实 ALTER 形成的不同布局，直接生成 tiering split，验证旧分区不扩展到新默认桶数，新分区也不漏桶。
         Object[] ctx = setupRescaledPartitionedTable();
         TableInfo tableInfo = (TableInfo) ctx[1];
         long oldPartitionId = (long) ctx[2];

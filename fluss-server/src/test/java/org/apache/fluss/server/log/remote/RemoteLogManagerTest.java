@@ -421,6 +421,7 @@ class RemoteLogManagerTest extends RemoteLogTestBase {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void testRemoteFirstFetchRejectsNonLeader(boolean partitionTable) throws Exception {
+        // 中文解释：准备已上传远端的日志后把本副本切为 follower，验证 REMOTE_FIRST 读取也必须先通过 leader 检查，不能绕过角色限制。
         TableBucket tb = makeTableBucket(partitionTable);
         makeLogTableAsLeader(tb, partitionTable);
         Replica replica = replicaManager.getReplicaOrException(tb);

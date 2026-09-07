@@ -157,6 +157,7 @@ message GetTableInfoResponse {
   required int64 created_time = 4;
   required int64 modified_time = 5;
   optional string remote_data_dir = 6;
+  // 中文解释：表布局版本用于判断缺失分区桶数能否兼容回退；optional 保留旧消息不携带字段的状态。
   optional int64 bucket_count_epoch = 7;
 }
 
@@ -296,6 +297,7 @@ message LimitScanRequest {
   optional int64 partition_id = 3;
   required int32 bucket_id = 4;
   required int32 limit = 5;
+  // 中文解释：声明该请求计算目标桶时所用的桶数，供服务端校验；它不是用来修改服务端布局的元数据。
   optional int32 routing_bucket_count = 6;
 }
 
@@ -317,6 +319,7 @@ message PbScanReqForBucket {
   required int32 bucket_id = 3;
   // If set, stops returning rows after this many records.
   optional int64 limit = 4;
+  // 中文解释：每个目标桶携带其路由时桶数；合批中的不同分区可独立校验并返回各自错误。
   optional int32 routing_bucket_count = 5;
 }
 
@@ -402,6 +405,7 @@ message ListOffsetsRequest {
   optional int64 partition_id = 4;
   repeated int32 bucket_id = 5 [packed = true]; // it is recommended to use packed for repeated numerics to get more efficient encoding
   optional int64 startTimestamp = 6;
+  // 中文解释：声明该请求计算目标桶时所用的桶数，供服务端校验；它不是用来修改服务端布局的元数据。
   optional int32 routing_bucket_count = 7;
 }
 message ListOffsetsResponse {
@@ -878,6 +882,7 @@ message PbPartitionMetadata {
   required int64 partition_id = 3;
   repeated PbBucketMetadata bucket_metadata = 4;
   // the actual bucket count for this partition, used for per-partition bucket rescale
+  // 中文解释：这是 Coordinator 提供的分区实际布局，与客户端请求声明自己采用的路由桶数不同。
   optional int32 bucket_count = 5;
 }
 
@@ -899,6 +904,7 @@ message PbProduceLogReqForBucket {
   required bytes records = 3;
   // The original partition name for a historical write; unset for a normal write.
   optional string original_partition_name = 4;
+  // 中文解释：每个目标桶携带其路由时桶数；合批中的不同分区可独立校验并返回各自错误。
   optional int32 routing_bucket_count = 5;
 }
 
@@ -930,6 +936,7 @@ message PbFetchLogReqForBucket {
   // TODO leader epoch
   required int64 fetch_offset = 3;
   required int32 max_fetch_bytes = 4;
+  // 中文解释：每个目标桶携带其路由时桶数；合批中的不同分区可独立校验并返回各自错误。
   optional int32 routing_bucket_count = 5;
 }
 
@@ -963,6 +970,7 @@ message PbPutKvReqForBucket {
   optional string original_partition_name = 4;
   // the bucket count the sender used to form bucket_id; the server compares it against the
   // actual count to detect stale routing. Not authoritative metadata.
+  // 中文解释：每个目标桶携带其路由时桶数；合批中的不同分区可独立校验并返回各自错误。
   optional int32 routing_bucket_count = 5;
 }
 
@@ -988,6 +996,7 @@ message PbLookupReqForBucket {
   repeated bytes keys = 3;
   // The original partition name for historical lookup. It is unset for normal lookup.
   optional string original_partition_name = 4;
+  // 中文解释：每个目标桶携带其路由时桶数；合批中的不同分区可独立校验并返回各自错误。
   optional int32 routing_bucket_count = 5;
 }
 
@@ -1014,6 +1023,7 @@ message PbPrefixLookupReqForBucket {
   optional int64 partition_id = 1;
   required int32 bucket_id = 2;
   repeated bytes keys = 3;
+  // 中文解释：声明该请求计算目标桶时所用的桶数，供服务端校验；它不是用来修改服务端布局的元数据。
   optional int32 routing_bucket_count = 4;
 }
 
@@ -1084,6 +1094,7 @@ message PbNotifyLeaderAndIsrReqForBucket {
   repeated int32 isr = 6 [packed = true];
   required int32 bucket_epoch = 7;
   repeated int32 standby_replicas = 8 [packed = true];
+  // 中文解释：角色激活携带分区实际桶数，TabletServer 无需等待另一条元数据推送即可校验客户端路由。
   optional int32 bucket_count = 9;
   optional int64 bucket_count_epoch = 10;
 }
@@ -1157,6 +1168,7 @@ message PbPartitionInfo {
   required PbPartitionSpec partition_spec = 2;
   optional string remote_data_dir = 3;
   // the actual bucket count for this partition, used for per-partition bucket rescale
+  // 中文解释：公开分区信息携带实际桶数，使扫描、统计和恢复按该分区自己的桶范围枚举。
   optional int32 bucket_count = 4;
 }
 
@@ -1368,6 +1380,7 @@ message PbKvSnapshotLeaseForBucket {
 message PbTableStatsReqForBucket {
   optional int64 partition_id = 1;
   required int32 bucket_id = 2;
+  // 中文解释：声明该请求计算目标桶时所用的桶数，供服务端校验；它不是用来修改服务端布局的元数据。
   optional int32 routing_bucket_count = 3;
 }
 

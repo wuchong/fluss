@@ -773,6 +773,7 @@ public class TabletServiceITCase {
 
     @Test
     void testRoutingBucketCountValidationAppliesToClientRequestsOnly() throws Exception {
+        // 中文解释：对同一 leader 分别发送客户端及副本身份的错误路由桶数请求，验证只拒绝客户端；未知桶仍走原有逐桶错误返回路径。
         // Routing validation only applies to hash-distributed tables: a keyless table may place a
         // record in any bucket, so a stale count is harmless there (see
         // ReplicaManager#validateRoutingBucketCount).
@@ -805,6 +806,7 @@ public class TabletServiceITCase {
 
         // the very same count coming from a follower is not validated: a follower's bucket ids come
         // from NotifyLeaderAndIsr, so replication must not depend on the leader's metadata cache.
+        // 中文解释：replicaId 为非负值代表复制请求，使用同样错误桶数验证复制流量不会被客户端路由校验拦截。
         assertListOffsetsResponse(
                 leaderGateWay
                         .listOffsets(
@@ -841,6 +843,7 @@ public class TabletServiceITCase {
 
     @Test
     void testStaleRoutingBucketCountOnlyFailsTheOffendingBucket() throws Exception {
+        // 中文解释：找到同一服务器承载的两个 leader，把正确和错误桶数放进同一个统计请求，验证仅错误桶返回 STALE_METADATA。
         // 9 buckets over 3 tablet servers, so at least one server necessarily leads two of them
         // and a single request can carry two buckets hosted by the same leader.
         int bucketCount = 9;
@@ -865,6 +868,7 @@ public class TabletServiceITCase {
                             FLUSS_CLUSTER_EXTENSION.waitAndGetLeader(tb), k -> new ArrayList<>())
                     .add(bucketId);
         }
+        // 中文解释：9 个桶分布在 3 台服务器上必有两个 leader 共址，从而可在单次 RPC 中观察成功与失败并存。
         Map.Entry<Integer, List<Integer>> coLocated =
                 bucketsByLeader.entrySet().stream()
                         .filter(entry -> entry.getValue().size() >= 2)

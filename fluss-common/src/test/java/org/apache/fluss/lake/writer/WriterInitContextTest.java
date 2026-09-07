@@ -32,6 +32,7 @@ class WriterInitContextTest {
 
     @Test
     void testDefaultTieringRoundMetadata() {
+        // 中文解释：用最小 WriterInitContext 实现验证可选轮次信息和临时目录仍保留未知值；新增必需的桶数方法在本测试中不会被调用。
         WriterInitContext context =
                 new WriterInitContext() {
                     @Override

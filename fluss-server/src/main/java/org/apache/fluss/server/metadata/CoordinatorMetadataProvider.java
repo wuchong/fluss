@@ -105,6 +105,7 @@ public class CoordinatorMetadataProvider extends ZkBasedMetadataProvider {
                         partitionId,
                         ctx.getPartitionAssignment(new TablePartition(tableId, partitionId)));
         return Optional.of(
+                // 中文解释：从 Coordinator 完整 assignment 构造桶列表，因此这里的列表长度可以作为分区实际桶数返回。
                 new PartitionMetadata(
                         tableId,
                         partitionName,

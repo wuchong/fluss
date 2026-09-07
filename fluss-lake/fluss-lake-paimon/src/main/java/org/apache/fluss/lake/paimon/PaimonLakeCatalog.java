@@ -127,6 +127,7 @@ public class PaimonLakeCatalog implements LakeCatalog {
             throws TableNotExistException {
         // Apply the bucket count rescale separately so the schema-compat branches below cannot
         // swallow it.
+        // 中文解释：先独立提取 Fluss 桶数变更，防止后续 schema 兼容分支因列结构相同而跳过默认桶数更新。
         Integer newBucketCount = null;
         List<TableChange> remainingChanges = new ArrayList<>(tableChanges.size());
         for (TableChange tableChange : tableChanges) {
@@ -325,6 +326,7 @@ public class PaimonLakeCatalog implements LakeCatalog {
         }
     }
 
+    // 中文解释：这个专用入口把 Fluss bucket.num 转成 Paimon bucket，绕过的是普通用户选项限制，而非已有分区的数据重分布。
     private void applyBucketCountChange(TablePath tablePath, int newBucketCount)
             throws TableNotExistException {
         // Bypass toPaimonSchemaChanges (which rejects Paimon's own BUCKET key via

@@ -54,6 +54,7 @@ public final class Cluster {
     private final Map<Long, TablePath> pathByTableId;
     private final Map<PhysicalTablePath, Long> partitionsIdByPath;
     private final Map<Long, String> partitionNameById;
+    // 中文解释：桶数按不可变的表 ID 与分区 ID 缓存，避免同名分区删除重建后复用旧布局；非分区表另按 tableId 保存。
     private final Map<TablePartition, Integer> bucketCountByPartition;
     private final Map<Long, Integer> bucketCountByTable;
 
@@ -152,6 +153,7 @@ public final class Cluster {
             }
         }
         // resolve the invalid partition ids so the TablePartition-keyed count map can be filtered
+        // 中文解释：失效物理路径时同步剔除其布局缓存，否则刷新 leader 后仍可能用旧桶数计算路由。
         Set<Long> invalidPartitionIds = new HashSet<>();
         for (PhysicalTablePath path : physicalTablesToInvalid) {
             Long pid = partitionsIdByPath.get(path);
@@ -291,6 +293,7 @@ public final class Cluster {
      * avoids combining a stale tableId/partitionId with a newer one after a replacement.
      */
     public Optional<TablePartition> getTablePartition(PhysicalTablePath physicalTablePath) {
+        // 中文解释：从同一个 Cluster 快照解析表与分区身份，避免将不同刷新时刻的 ID 组合成缓存键。
         Long partitionId = partitionsIdByPath.get(physicalTablePath);
         if (partitionId == null) {
             return Optional.empty();

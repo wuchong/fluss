@@ -151,6 +151,7 @@ class PrimaryKeyLookuper extends AbstractLookuper implements Lookuper {
                 // The partition was rescaled but its per-partition bucket count is unavailable.
                 // Report it as a failed future (retriable), consistent with historicalLookup,
                 // rather than throwing synchronously from this async method.
+                // 中文解释：该 API 返回 Future，因此元数据不足也通过异常 Future 交付，保持与正常异步查询一致的错误契约。
                 return completedExceptionally(e);
             }
         }
@@ -158,6 +159,7 @@ class PrimaryKeyLookuper extends AbstractLookuper implements Lookuper {
         // A partition created before ALTER bucket.num keeps its own layout, so re-route by the
         // partition's actual count. The historical lookups above are routed by the historical
         // partition's own count on their own path.
+        // 中文解释：已有分区可能保留旧桶数，只有取得实际值后才能确认原先按表默认值计算的 bucketId 是否需要重算。
         if (bucketCount != numBuckets) {
             bucketId = bucketingFunction.bucketing(bkBytes, bucketCount);
         }
@@ -216,6 +218,7 @@ class PrimaryKeyLookuper extends AbstractLookuper implements Lookuper {
                     metadataUpdater.getPartitionIdOrElseThrow(historicalPartitionPath);
             // Route by the historical partition's own count, which an ALTER bucket.num does not
             // change. The bucket the lake data lives in is resolved on the server.
+            // 中文解释：先按历史分区的实际布局找到服务端入口；原始分区在湖中的桶位置由服务端湖查询层另行解析。
             int historicalBucketCount =
                     resolvePartitionBucketCount(
                             new TablePartition(tableInfo.getTableId(), historicalPartitionId));

@@ -194,6 +194,7 @@ class PrefixKeyLookuper extends AbstractLookuper implements Lookuper {
         }
 
         // Compute bucket ID after partition resolution — needs per-partition bucket count
+        // 中文解释：先解析分区身份与实际桶数，再计算前缀键所在桶，保证扩容前后分区采用各自的哈希取模范围。
         int bucketId = bucketingFunction.bucketing(bucketKeyBytes, bucketCount);
 
         CompletableFuture<LookupResult> lookupFuture = new CompletableFuture<>();

@@ -163,6 +163,7 @@ class ZkBasedMetadataProviderTest {
 
     @Test
     void testGetPartitionMetadataFromZk() throws Exception {
+        // 中文解释：在 ZK 注册分区、两桶 assignment 及各自 ISR，验证同步元数据读取正确组装分区身份、leader、副本和 bucket epoch。
         // Prepare test data
         TablePath tablePath = TablePath.of("test_db", "test_partition_table");
         long tableId = 2001L;
@@ -239,6 +240,7 @@ class ZkBasedMetadataProviderTest {
 
     @Test
     void testBatchGetPartitionMetadataFromZkAsync() throws Exception {
+        // 中文解释：为两张表注册三个分区及不同 leader，批量读取后按分区 ID 核对归属和桶元数据，验证异步读取不会串表或串分区。
         // Prepare test data with multiple tables and partitions
         TablePath tablePath1 = TablePath.of("test_db", "table1");
         TablePath tablePath2 = TablePath.of("test_db", "table2");

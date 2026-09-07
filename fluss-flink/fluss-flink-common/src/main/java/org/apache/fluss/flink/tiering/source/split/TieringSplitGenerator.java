@@ -99,6 +99,7 @@ public class TieringSplitGenerator {
                                     Collectors.toMap(
                                             PartitionInfo::getPartitionId,
                                             PartitionInfo::getPartitionName));
+            // 中文解释：tiering 同时保存分区名和实际桶数，后续 offset 查询及 split 枚举使用同一份分区布局。
             Map<Long, Integer> bucketCountById =
                     partitionInfos.stream()
                             .collect(
@@ -116,6 +117,7 @@ public class TieringSplitGenerator {
                 // partition directly.
                 metadataUpdater.checkAndUpdateTableMetadata(Collections.singleton(tablePath));
                 metadataUpdater.checkAndUpdatePartitionMetadata(historicalPath);
+                // 中文解释：历史分区不在公开列表中，单独刷新其元数据；它也保留创建时桶数，不能按当前表默认值枚举。
                 long historicalPartitionId =
                         metadataUpdater.getPartitionIdOrElseThrow(historicalPath);
                 partitionNameById.put(historicalPartitionId, HISTORICAL_PARTITION_VALUE);

@@ -54,6 +54,7 @@ public abstract class WriteBatch {
 
     // The bucket count used to calculate this batch's bucketId; carried into the request
     // so the TabletServer can validate it against the actual count (STALE_METADATA on mismatch).
+    // 中文解释：桶数描述本批次已采用的布局，与目标 bucketId 一起传输，供服务端发现陈旧路由。
     private int bucketCount;
 
     protected final List<WriteCallback> callbacks = new ArrayList<>();

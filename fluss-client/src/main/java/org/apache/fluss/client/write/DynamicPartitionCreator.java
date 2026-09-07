@@ -87,6 +87,7 @@ public class DynamicPartitionCreator {
             return metadataUpdater.getCluster();
         }
 
+        // 中文解释：存在 partitionId 还不一定能分桶；返回的快照需要同时满足分区身份和可用布局条件。
         Cluster cluster = metadataUpdater.getCluster();
         if (isPartitionMetadataAvailable(cluster, physicalTablePath, tableInfo)) {
             return cluster;
@@ -134,9 +135,11 @@ public class DynamicPartitionCreator {
      */
     private Cluster waitForPartitionMetadata(
             PhysicalTablePath physicalTablePath, TableInfo tableInfo) {
+        // 中文解释：分区创建 RPC 仍异步完成，但当前写入等待可用路由元数据后才继续，以请求超时约束等待窗口。
         long deadlineNanos = System.nanoTime() + metadataWaitTimeout.toNanos();
         long backoffMs = 100;
         while (true) {
+            // 中文解释：创建失败通过共享状态通知所有等待者，使它们立即失败而不是一直等元数据超时。
             Throwable creationFailure = partitionCreationFailures.get(physicalTablePath);
             if (creationFailure != null) {
                 throw new FlussRuntimeException(
@@ -197,6 +200,7 @@ public class DynamicPartitionCreator {
         // bucketCountEpoch == 0 proves the table was never rescaled, so the table-level bucket
         // count IS this partition's actual count. Waiting for a per-partition count that an old
         // server never sends would only stall the caller until the request timeout.
+        // 中文解释：旧服务端可能永远不发分区桶数字段；只有表元数据仍为 epoch 0 时才允许缺字段继续执行。
         return tableInfo.getBucketCountEpoch() == 0;
     }
 

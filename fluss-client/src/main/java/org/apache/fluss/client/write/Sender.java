@@ -653,6 +653,7 @@ public class Sender implements Runnable {
             // re-enqueues the batch.
             accumulator.updateThrottle(readyWriteBatch.tableBucket(), 1.0f);
         }
+        // 中文解释：服务端明确在追加前拒绝此批次，因此可回收幂等序号；固定 bucketId 的旧批次不能直接重试。
         if (error.error() == Errors.STALE_METADATA) {
             // The bucketId in this batch was computed with a stale bucket count, and the server
             // rejected it during pre-append routing validation, so it was provably never written.
@@ -825,6 +826,7 @@ public class Sender implements Runnable {
                 // The queued batches were routed by the original partition's bucket count; they can
                 // only land in the right buckets of the historical partition if its own count
                 // matches. Otherwise the bucket ids would be hashes against the wrong layout.
+                // 中文解释：先查历史分区自己的布局再尝试移动队列；改变目标 partitionId 并不意味着旧哈希桶仍然有效。
                 TablePartition historicalPartition =
                         metadataUpdater
                                 .getCluster()

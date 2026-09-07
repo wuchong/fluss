@@ -104,6 +104,7 @@ final class FlussOnlyBatchSplitGenerator {
 
     private List<SourceSplitBase> generateLogTableSplits(Collection<PartitionInfo> partitions) {
         List<SourceSplitBase> splits = new ArrayList<>();
+        // 中文解释：纯 Fluss 日志批读把分区桶数一路传给 split 生成器，避免退回创建表时缓存的统一桶数。
         for (PartitionInfo partition : partitions) {
             splits.addAll(
                     getLogSplits(

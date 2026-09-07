@@ -925,6 +925,7 @@ public class CoordinatorEventProcessor implements EventProcessor {
                         oldTableInfo.getComment().orElse(null),
                         oldTableInfo.getCreatedTime(),
                         System.currentTimeMillis(),
+                        // 中文解释：schema 更新只替换列结构，必须保留布局 epoch，否则已扩缩容表会被误认为仍可按旧客户端规则处理。
                         oldTableInfo.getBucketCountEpoch()));
 
         updateTabletServerMetadataCache(
@@ -1015,6 +1016,7 @@ public class CoordinatorEventProcessor implements EventProcessor {
                     newTableInfo.getTableId(),
                     oldTableInfo.getNumBuckets(),
                     newTableInfo.getNumBuckets());
+            // 中文解释：即使自动分区策略本身没有变化，默认桶数变化也需要刷新自动分区管理器持有的表信息。
             autoPartitionManager.updateAutoPartitionTables(newTableInfo);
         }
 

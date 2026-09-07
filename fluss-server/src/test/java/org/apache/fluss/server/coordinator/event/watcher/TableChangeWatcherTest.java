@@ -204,6 +204,7 @@ class TableChangeWatcherTest {
 
     @Test
     void testPartitionedTable() throws Exception {
+        // 中文解释：创建带分区的表并观察注册及删除事件，模拟分区删除完成通知，验证 watcher 与生命周期限流器协同发出完整事件集合。
         TablePath tablePath = TablePath.of(DEFAULT_DB, "partition_table");
         TableDescriptor partitionedTable =
                 TableDescriptor.builder()
@@ -294,6 +295,7 @@ class TableChangeWatcherTest {
         retry(
                 Duration.ofMinutes(1),
                 () -> {
+                    // 中文解释：手工报告分区删除完成以释放生命周期限流槽，避免只因测试环境缺少真正删除回调而阻塞后续事件。
                     lifecycleThrottler.onPartitionDropCompleted(new TablePartition(tableId, 1L));
                     lifecycleThrottler.onPartitionDropCompleted(new TablePartition(tableId, 2L));
                     assertThat(eventManager.getEvents())
@@ -380,6 +382,7 @@ class TableChangeWatcherTest {
 
     @Test
     void testTableRegistrationChange() {
+        // 中文解释：依次创建表、修改自定义属性和删除表，等待 watcher 收集事件，验证注册变更携带更新后的 TableRegistration。
         // create a table
         TablePath tablePath = TablePath.of(DEFAULT_DB, "table_registration_change");
         TableAssignment tableAssignment =

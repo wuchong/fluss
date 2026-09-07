@@ -101,6 +101,7 @@ public class WriterClient {
     private final MetadataUpdater metadataUpdater;
     // BucketAssigner cache keyed by TablePartition (partitioned tables) or tableId (non-
     // partitioned tables).
+    // 中文解释：分桶器按分区 ID 缓存；同名分区重建获得新 ID 后自然使用新布局，不复用旧分桶器。
     private final Map<TablePartition, BucketAssigner> partitionBucketAssigners =
             new CopyOnWriteMap<>();
     private final Map<Long, BucketAssigner> tableBucketAssigners = new CopyOnWriteMap<>();
@@ -210,6 +211,7 @@ public class WriterClient {
             Cluster cluster;
             // The path the record is physically written to. A retired partition's records land in
             // the historical partition, whose own bucket count must drive the assignment.
+            // 中文解释：记录仍保留原始分区语义，但过期数据的物理目标可能是历史分区，实际分桶应以物理目标为准。
             PhysicalTablePath routingPath = physicalTablePath;
             if (tableInfo.isPartitioned()) {
                 boolean historicalPartitionEnabled =
@@ -233,6 +235,7 @@ public class WriterClient {
             BucketAssigner bucketAssigner;
             int bucketCount;
             if (tableInfo.isPartitioned()) {
+                // 中文解释：从同一元数据快照解析目标身份和桶数，再创建对应分桶器，避免用当前表默认值覆盖旧分区布局。
                 PhysicalTablePath assignerPath = routingPath;
                 TablePartition tablePartition =
                         cluster.getTablePartition(routingPath)
@@ -523,6 +526,7 @@ public class WriterClient {
      * Sender} when a write batch receives STALE_METADATA so the next {@code send} creates a new
      * assigner with the refreshed bucket count.
      */
+    // 中文解释：发送器报告布局失效时清理对应分桶器，下次写入才能依据刷新后的实际桶数重新分桶。
     private void invalidateBucketAssigner(TableBucket tableBucket) {
         Long partitionId = tableBucket.getPartitionId();
         if (partitionId != null) {

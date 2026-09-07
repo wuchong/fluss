@@ -488,6 +488,7 @@ public class AutoPartitionManager implements AutoCloseable {
         // Read the table-level bucket count fresh from ZK, not from the possibly-stale TableInfo
         int bucketCount;
         try {
+            // 中文解释：每轮自动创建前从 ZK 读取默认桶数，定时任务持有的旧 TableInfo 不能决定新分区布局。
             bucketCount = metadataManager.getTableRegistration(tablePath).bucketCount;
         } catch (Exception e) {
             LOG.warn(
@@ -511,6 +512,7 @@ public class AutoPartitionManager implements AutoCloseable {
         long tableId = tableInfo.getTableId();
         int replicaFactor = tableInfo.getTableConfig().getReplicationFactor();
         TabletServerInfo[] servers = metadataCache.getLiveServers();
+        // 中文解释：容量预检和 assignment 生成使用同一个桶数，随后把这个值持久化为新分区的实际布局。
         long newKvLeaderReplicaCount = tableInfo.hasPrimaryKey() ? bucketCount : 0;
         try {
             replicaCapacityController.checkCanCreateKvLeaderReplicas(newKvLeaderReplicaCount);

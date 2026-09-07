@@ -657,6 +657,7 @@ class HudiTieringTest {
 
         @Override
         public int bucketCount() {
+            // 中文解释：本夹具未模拟不同分区桶数，使用表桶数满足新增上下文接口，不代表 Hudi 已支持在线扩缩容。
             return tableInfo.getNumBuckets();
         }
     }

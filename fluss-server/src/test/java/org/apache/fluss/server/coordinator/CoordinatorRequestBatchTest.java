@@ -57,6 +57,7 @@ class CoordinatorRequestBatchTest {
      */
     @Test
     void testNotifyLeaderAndIsrSendFailureClearsLeaderPending() {
+        // 中文解释：让发往 leader 的角色通知发送失败，验证清除对应的待激活标记，避免未收到通知的 leader 长期占据 pending 状态。
         long tableId = 100L;
         TableBucket tb = new TableBucket(tableId, 0);
         TablePath tablePath = TablePath.of("db1", "t1");
@@ -96,6 +97,7 @@ class CoordinatorRequestBatchTest {
      */
     @Test
     void testNotifyLeaderAndIsrSendFailureToFollowerDoesNotClearOtherPending() {
+        // 中文解释：让 follower 通知发送失败，同时保留另一个桶的 leader 待激活状态，验证失败清理不会波及无关桶。
         long tableId = 200L;
         TableBucket followerTb = new TableBucket(tableId, 0);
         TableBucket otherLeaderTb = new TableBucket(tableId, 1);

@@ -34,6 +34,7 @@ public class PrefixLookupBatch {
     /** The table bucket that the lookup operations should fall into. */
     private final TableBucket tableBucket;
 
+    // 中文解释：前缀查询的合批结果也保存路由时桶数，避免只携带 bucketId 而无法校验布局是否匹配。
     private final int bucketCount;
 
     private final List<PrefixLookupQuery> prefixLookups;

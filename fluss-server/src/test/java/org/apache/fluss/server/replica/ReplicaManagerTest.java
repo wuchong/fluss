@@ -595,6 +595,7 @@ class ReplicaManagerTest extends ReplicaTestBase {
 
     @Test
     void testNewKvLeaderRejectedWhenDiskLocked() throws Exception {
+        // 中文解释：把磁盘使用率推到写保护阈值以上，再分别激活 KV 和日志 leader，验证 KV 激活被拒绝且不创建 KV tablet，日志角色转换仍可完成。
         enableDiskWriteProtectionForTest();
         TableBucket kvTb = new TableBucket(DATA1_TABLE_ID_PK, 1);
         TableBucket logTb = new TableBucket(DATA1_TABLE_ID, 1);
@@ -1773,6 +1774,7 @@ class ReplicaManagerTest extends ReplicaTestBase {
 
     @Test
     void becomeLeaderOrFollower() throws Exception {
+        // 中文解释：先用较新 leader epoch 激活副本，再发送旧 epoch 通知，验证角色更新被 fencing 拒绝且已生效的副本状态保持不变。
         TableBucket tb = new TableBucket(DATA1_TABLE_ID, 1);
 
         // make tb as leader.
@@ -1833,6 +1835,7 @@ class ReplicaManagerTest extends ReplicaTestBase {
 
     @Test
     void testLakeSnapshotReadFailureDoesNotFailLeaderTransition() throws Exception {
+        // 中文解释：在湖快照元数据中引用不存在的 offset 文件，再执行升主，验证湖快照读取失败不会使 leader 角色转换失败。
         TablePath tablePath = TablePath.of("test_db", "lake_table");
         long tableId = 2998233L;
         Map<String, String> properties = new HashMap<>();
@@ -1842,6 +1845,7 @@ class ReplicaManagerTest extends ReplicaTestBase {
 
         FsPath missingOffsetsPath =
                 new FsPath(new File(tempDir, "missing.offsets").getAbsolutePath());
+        // 中文解释：ZK 里快照存在但文件路径不可读，故障落在读取湖 offset 阶段，而非缺少表或角色通知。
         zkClient.upsertLakeTable(
                 tableId,
                 new LakeTable(
@@ -1876,6 +1880,7 @@ class ReplicaManagerTest extends ReplicaTestBase {
 
     @Test
     void testStopReplica() throws Exception {
+        // 中文解释：先停止副本再以更高 epoch 重新激活，随后发送旧 epoch 的停止请求，验证过期请求不能删除新一轮的有效副本。
         TableBucket tb = new TableBucket(DATA1_TABLE_ID, 1);
 
         // make tb as leader.

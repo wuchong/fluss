@@ -142,6 +142,7 @@ class PrimaryKeyLookuperTest {
 
     @Test
     void testRescaledPartitionMissingBucketCountFailsFutureInsteadOfThrowing() throws Exception {
+        // 中文解释：模拟表已扩缩容但分区桶数缺失，验证 lookup 返回失败 Future，异常为 StaleMetadataException，而不是同步抛出或按表默认值误查。
         // The table was rescaled (bucketCountEpoch > 0) but the per-partition bucket count is
         // absent from metadata (e.g. an old server that never sends it). The lookup must not
         // silently route with the table-level count (wrong bucket, empty result); it must fail
@@ -155,6 +156,7 @@ class PrimaryKeyLookuperTest {
                         .withTabletServerGateway(NODE1.id(), gateway)
                         .build();
         // The cluster carries no per-partition bucket count for the active partition.
+        // 中文解释：保留有效分区身份但省略其桶数，隔离出布局缺失条件，避免把分区不存在误当成本测试触发原因。
         metadataUpdater.updateCluster(createCluster());
 
         LookupClient lookupClient = new LookupClient(new Configuration(), metadataUpdater);

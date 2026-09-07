@@ -99,6 +99,7 @@ class TableRegistrationJsonSerdeTest extends JsonSerdeTestBase<TableRegistration
     }
 
     @Override
+    // 中文解释：序列化基类用这些期望 JSON 校验新格式：版本升级到 2，且未扩缩容表显式保存 epoch 0。
     protected String[] expectedJsons() {
         return new String[] {
             "{\"version\":2,\"table_id\":1234,\"comment\":\"first-table\",\"partition_key\":[\"a\",\"b\"],"

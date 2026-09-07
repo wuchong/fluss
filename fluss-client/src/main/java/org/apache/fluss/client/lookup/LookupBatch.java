@@ -34,6 +34,7 @@ public class LookupBatch {
 
     private final List<LookupQuery> lookups;
 
+    // 中文解释：批量请求沿用查询携带的布局值，用于服务端校验这个批次已经选定的 bucketId。
     private final int bucketCount;
 
     LookupBatch(LookupBatchKey lookupBatchKey, int bucketCount) {
