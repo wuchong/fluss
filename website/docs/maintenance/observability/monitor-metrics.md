@@ -1258,6 +1258,12 @@ How to Use Flink Metrics, you can see [Flink Metrics](https://nightlies.apache.o
             <td>Time difference between reading the data file and file creation.</td>
             <td>Gauge</td>
         </tr>
+        <tr>
+            <td>pendingRecords</td>
+            <td>Flink Source Operator</td>
+            <td>The number of log records that are available after the current source fetch offset. Only the streaming log part is counted, snapshot and lake records are excluded.</td>
+            <td>Gauge</td>
+        </tr>
     </tbody>
 </table>
 
