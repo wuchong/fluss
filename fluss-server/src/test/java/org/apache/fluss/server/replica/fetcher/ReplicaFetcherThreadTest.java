@@ -248,7 +248,7 @@ public class ReplicaFetcherThreadTest {
         leaderReplica.getLogTablet().updateHighWatermark(30L);
         followerReplica.getLogTablet().updateHighWatermark(30L);
         leaderReplica.getLogTablet().updateMinRetainOffset(30L);
-        followerReplica.getLogTablet().updateHighestCopiedEndOffset(30L);
+        followerReplica.getLogTablet().updateRemoteLogOffsets(Long.MAX_VALUE, -1L, 30L);
 
         assertThat(leaderReplica.getLocalLogEndOffset()).isEqualTo(30L);
         assertThat(followerReplica.getLocalLogEndOffset()).isEqualTo(30L);
