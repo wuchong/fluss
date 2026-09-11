@@ -235,8 +235,7 @@ class RemoteLogFetcherTest extends RemoteLogTestBase {
                 replicaManager.getReplicaOrException(targetBucket),
                 ConfigOptions.TABLE_TIERED_LOG_LOCAL_SEGMENTS,
                 "1");
-        oldLeaderLog.updateRemoteLogStartOffset(0L);
-        oldLeaderLog.updateRemoteLogEndOffset(30L);
+        oldLeaderLog.updateRemoteLogOffsets(0L, 30L, 30L);
         assertThat(oldLeaderLog.localLogStartOffset()).isEqualTo(30L);
         checkFetchLogRpcAtShorterSegmentEnd(
                 targetBucket,
