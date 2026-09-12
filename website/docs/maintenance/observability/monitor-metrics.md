@@ -463,8 +463,8 @@ Some metrics might not be exposed when using other JVM implementations (e.g. IBM
   </thead>
   <tbody>
     <tr>
-      <th rowspan="37"><strong>tabletserver</strong></th>
-      <td style={{textAlign: 'center', verticalAlign: 'middle' }} rowspan="25">-</td>
+      <th rowspan="39"><strong>tabletserver</strong></th>
+      <td style={{textAlign: 'center', verticalAlign: 'middle' }} rowspan="27">-</td>
       <td>messagesInPerSecond</td>
       <td>The number of messages written per second to this server.</td>
       <td>Meter</td>
@@ -588,6 +588,16 @@ Some metrics might not be exposed when using other JVM implementations (e.g. IBM
       <td>preWriteBufferTruncateAsErrorPerSecond</td>
       <td>The number of kv pre-write buffer truncate due to the error happened when writing cdc to log per second.</td>
       <td>Meter</td>
+    </tr>
+    <tr>
+      <td>kvWalMemoryPoolUsage</td>
+      <td>Memory currently allocated from the server-wide WAL memory pool for primary key tables in this server (in bytes). The pool capacity is configured by <code>server.buffer.memory-size</code>.</td>
+      <td>Gauge</td>
+    </tr>
+    <tr>
+      <td>kvWalMemoryPoolCapacity</td>
+      <td>Total capacity of the server-wide WAL memory pool for primary key tables in this server (in bytes).</td>
+      <td>Gauge</td>
     </tr>
     <tr>
       <td rowspan="4">historical</td>

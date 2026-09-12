@@ -277,6 +277,13 @@ public class MetricNames {
     public static final String ROCKSDB_BLOCK_CACHE_PINNED_USAGE_TOTAL =
             "rocksdbBlockCachePinnedUsageTotal";
 
+    // Server-level KV WAL memory pool metrics for primary key tables
+    /** Memory used by the KV WAL memory pool for primary key tables in this server (bytes). */
+    public static final String KV_WAL_MEMORY_POOL_USAGE = "kvWalMemoryPoolUsage";
+
+    /** Total capacity of the KV WAL memory pool for primary key tables in this server (bytes). */
+    public static final String KV_WAL_MEMORY_POOL_CAPACITY = "kvWalMemoryPoolCapacity";
+
     // --------------------------------------------------------------------------------------------
     // metrics for table bucket
     // --------------------------------------------------------------------------------------------
