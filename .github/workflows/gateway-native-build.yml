@@ -1,0 +1,37 @@
+name: Build Fluss RC3 Gateway on native amd64
+on:
+  push:
+    branches: [release-tools/fluss-1.0.0-rc3-native]
+permissions:
+  contents: read
+jobs:
+  gateway:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: apache/fluss
+          ref: 5c07f88e50a8ff41b0ebc214a0458e5dba60be37
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c
+      - name: Build native executable from the immutable RC3 commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = x86_64
+          test "$(git rev-parse HEAD)" = 5c07f88e50a8ff41b0ebc214a0458e5dba60be37
+          git diff --exit-code
+          docker buildx build --platform linux/amd64 \
+            --file docker/fluss-gateway/Dockerfile.build --target artifact \
+            --output type=local,dest=artifacts .
+          test "$(artifacts/fluss-gateway --version)" = 'fluss-gateway 1.0.0'
+          git rev-parse HEAD > artifacts/RELEASE_COMMIT
+          cd artifacts
+          sha512sum fluss-gateway > fluss-gateway.sha512
+          tar -czf gateway-native-amd64.tgz fluss-gateway fluss-gateway.sha512 RELEASE_COMMIT
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gateway-native-amd64-5c07f88e50a8ff41b0ebc214a0458e5dba60be37
+          path: artifacts/gateway-native-amd64.tgz
+          retention-days: 7
+          if-no-files-found: error
