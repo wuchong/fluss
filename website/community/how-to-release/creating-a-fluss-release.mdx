@@ -530,6 +530,9 @@ git diff --cached --quiet
 Then run the following commands to build and push the fluss Docker image.
 
 ```bash
+$ cmp LICENSE-bin build-target/LICENSE
+$ cmp NOTICE-bin build-target/NOTICE
+
 $ rm -rf docker/fluss/build-target/
 $ mkdir docker/fluss/build-target/
 $ cp -r build-target/* docker/fluss/build-target
