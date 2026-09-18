@@ -14,7 +14,7 @@
 | [Fluss Gateway Binary Release for Linux ARM64](https://www.apache.org/dyn/closer.lua/fluss/fluss-1.0.0/fluss-gateway-1.0.0-bin-linux-arm64.tgz) | [.asc](https://downloads.apache.org/fluss/fluss-1.0.0/fluss-gateway-1.0.0-bin-linux-arm64.tgz.asc) | [.sha512](https://downloads.apache.org/fluss/fluss-1.0.0/fluss-gateway-1.0.0-bin-linux-arm64.tgz.sha512) |
 | [Fluss Helm Chart](https://www.apache.org/dyn/closer.lua/fluss/helm-chart/1.0.0/fluss-1.0.0.tgz) | [.asc](https://downloads.apache.org/fluss/helm-chart/1.0.0/fluss-1.0.0.tgz.asc) | [.sha512](https://downloads.apache.org/fluss/helm-chart/1.0.0/fluss-1.0.0.tgz.sha512) |
 
-Read the [release blog](/blog/releases/1.0/) about the new features and significant improvements in the Apache Fluss 1.0.0 release.
+Read the [release blog](https://fluss.apache.org/blog/releases/1.0/) about the new features and significant improvements in the Apache Fluss 1.0.0 release.
 
 ## Verifying Downloads
 
