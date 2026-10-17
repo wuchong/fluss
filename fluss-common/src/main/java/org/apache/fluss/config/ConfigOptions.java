@@ -2270,6 +2270,48 @@ public class ConfigOptions {
                                     + "as older versions cannot parse the extended batch format.");
 
     // ------------------------------------------------------------------------
+    //  ConfigOptions for Consumer Offsets
+    // ------------------------------------------------------------------------
+
+    public static final ConfigOption<MemorySize> OFFSET_METADATA_MAX_BYTES =
+            key("server.consumer-offsets.metadata.max-size")
+                    .memoryType()
+                    .defaultValue(MemorySize.parse("4kb"))
+                    .withDescription(
+                            "The maximum size for a metadata entry associated with an offset commit.");
+
+    public static final ConfigOption<Duration> OFFSETS_RETENTION =
+            key("server.consumer-offsets.ttl")
+                    .durationType()
+                    .defaultValue(Duration.ofDays(7))
+                    .withDescription(
+                            "The retention period for committed consumer offsets after they become inactive.");
+
+    public static final ConfigOption<Integer> OFFSETS_TABLE_NUM_BUCKETS =
+            key("server.consumer-offsets.table.bucket-count")
+                    .intType()
+                    .defaultValue(16)
+                    .withDescription(
+                            "The number of buckets for the consumer-offset system table. This value should not change after deployment. "
+                                    + "Unlike log tables, each KV bucket leader maintains a separate RocksDB instance, so a large value "
+                                    + "introduces overhead for small and medium clusters. Increase it only if the consumer-offset write "
+                                    + "load cannot be handled by the default number of bucket leaders.");
+
+    public static final ConfigOption<Integer> OFFSETS_TABLE_REPLICATION_FACTOR =
+            key("server.consumer-offsets.table.replication-factor")
+                    .intType()
+                    .defaultValue(3)
+                    .withDescription(
+                            "The replication factor for the consumer-offset system table. Table creation waits until the cluster has enough tablet servers.");
+
+    public static final ConfigOption<Duration> OFFSET_COMMIT_TIMEOUT =
+            key("server.consumer-offsets.commit-timeout")
+                    .durationType()
+                    .defaultValue(Duration.ofSeconds(5))
+                    .withDescription(
+                            "The maximum time to wait for all replicas to acknowledge an offset commit.");
+
+    // ------------------------------------------------------------------------
     //  ConfigOptions for Kv
     // ------------------------------------------------------------------------
     public static final ConfigOption<Duration> KV_SNAPSHOT_INTERVAL =
