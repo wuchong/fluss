@@ -32,6 +32,7 @@ import org.apache.fluss.metadata.AggFunction;
 import org.apache.fluss.metadata.ChangelogImage;
 import org.apache.fluss.metadata.DataLakeFormat;
 import org.apache.fluss.metadata.DeleteBehavior;
+import org.apache.fluss.metadata.KafkaTableSchema;
 import org.apache.fluss.metadata.KvFormat;
 import org.apache.fluss.metadata.LogFormat;
 import org.apache.fluss.metadata.MergeEngineType;
@@ -122,6 +123,8 @@ public class TableDescriptorValidation {
             }
         }
 
+        KafkaTableSchema.validate(tableDescriptor);
+
         // check distribution
         checkDistribution(tableDescriptor, maxBucketNum);
         checkPrimaryKey(tableDescriptor);
@@ -155,6 +158,10 @@ public class TableDescriptorValidation {
         } else {
             validateNoAggregationFunctions(newSchema);
         }
+        TableDescriptor updated =
+                TableDescriptor.builder(table.toTableDescriptor()).schema(newSchema).build();
+        KafkaTableSchema.validate(updated);
+        KafkaTableSchema.validateTablePath(table.getTablePath(), updated);
     }
 
     private static void checkTableLakeFormatMatchesCluster(
