@@ -22,6 +22,7 @@ import org.apache.fluss.exception.FlussRuntimeException;
 import org.apache.fluss.metrics.Counter;
 import org.apache.fluss.metrics.Histogram;
 import org.apache.fluss.rocksdb.RocksDBOperationUtils;
+import org.apache.fluss.rocksdb.RocksIteratorWrapper;
 import org.apache.fluss.server.kv.KvCloseMode;
 import org.apache.fluss.server.utils.ResourceGuard;
 import org.apache.fluss.utils.IOUtils;
@@ -210,25 +211,92 @@ public class RocksDBKv implements AutoCloseable {
         }
     }
 
-    public List<byte[]> prefixLookup(byte[] prefixKey) {
-        List<byte[]> pkList = new ArrayList<>();
-        byte[] upperBound = prefixUpperBound(prefixKey);
-        // The bound must outlive both the read options and the iterator that reference it.
-        try (Slice upperBoundSlice = upperBound == null ? null : new Slice(upperBound);
-                ReadOptions readOptions = new ReadOptions().setTotalOrderSeek(true)) {
+    /**
+     * Fixes a prefix lookup's read view without seeking. The caller must serialize creation with
+     * tablet mutations and close, and must close the returned lookup after use.
+     */
+    public PrefixLookup openPrefixLookup(byte[] prefixKey) throws IOException {
+        ResourceGuard.Lease lease = rocksDBResourceGuard.acquireResource();
+        Slice upperBoundSlice = null;
+        ReadOptions readOptions = null;
+        RocksIterator iterator = null;
+        try {
+            byte[] upperBound = prefixUpperBound(prefixKey);
+            if (upperBound != null) {
+                upperBoundSlice = new Slice(upperBound);
+            }
+            readOptions = new ReadOptions().setTotalOrderSeek(true);
             if (upperBoundSlice != null) {
                 readOptions.setIterateUpperBound(upperBoundSlice);
             }
-            try (RocksIterator iterator = db.newIterator(defaultColumnFamilyHandle, readOptions)) {
-                iterator.seek(prefixKey);
-                while (iterator.isValid()) {
-                    pkList.add(iterator.value());
-                    iterator.next();
-                }
-            }
+            iterator = db.newIterator(defaultColumnFamilyHandle, readOptions);
+            return new PrefixLookup(
+                    prefixKey.clone(), iterator, readOptions, upperBoundSlice, lease);
+        } catch (Throwable t) {
+            IOUtils.closeQuietly(iterator);
+            IOUtils.closeQuietly(readOptions);
+            IOUtils.closeQuietly(upperBoundSlice);
+            lease.close();
+            throw t;
+        }
+    }
+
+    /**
+     * A single-owner prefix read with a fixed iterator view and a lease on its RocksDB instance.
+     */
+    public static class PrefixLookup implements AutoCloseable {
+        private final byte[] prefixKey;
+        private final RocksIteratorWrapper iterator;
+        private final ReadOptions readOptions;
+        // The upper bound must outlive the iterator and read options that reference it.
+        @Nullable private final Slice upperBoundSlice;
+        private final ResourceGuard.Lease lease;
+        private boolean closed;
+
+        private PrefixLookup(
+                byte[] prefixKey,
+                RocksIterator iterator,
+                ReadOptions readOptions,
+                @Nullable Slice upperBoundSlice,
+                ResourceGuard.Lease lease) {
+            this.prefixKey = prefixKey;
+            this.iterator = new RocksIteratorWrapper(iterator);
+            this.readOptions = readOptions;
+            this.upperBoundSlice = upperBoundSlice;
+            this.lease = lease;
         }
 
-        return pkList;
+        /** Seeks and collects values from the view fixed when this lookup was opened. */
+        public List<byte[]> readAll() throws IOException {
+            if (closed) {
+                throw new IOException("Prefix lookup is closed.");
+            }
+            List<byte[]> values = new ArrayList<>();
+            try {
+                iterator.seek(prefixKey);
+                while (iterator.isValid()) {
+                    values.add(iterator.value());
+                    iterator.next();
+                }
+            } catch (RuntimeException e) {
+                if (e.getCause() instanceof RocksDBException) {
+                    throw new IOException("Failed to iterate prefix lookup.", e.getCause());
+                }
+                throw e;
+            }
+            return values;
+        }
+
+        @Override
+        public void close() {
+            if (!closed) {
+                closed = true;
+                IOUtils.closeQuietly(iterator);
+                IOUtils.closeQuietly(readOptions);
+                IOUtils.closeQuietly(upperBoundSlice);
+                lease.close();
+            }
+        }
     }
 
     public List<byte[]> limitScan(Integer limit) {
