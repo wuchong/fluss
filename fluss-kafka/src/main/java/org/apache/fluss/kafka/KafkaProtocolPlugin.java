@@ -20,7 +20,6 @@ package org.apache.fluss.kafka;
 import org.apache.fluss.config.ConfigOptions;
 import org.apache.fluss.config.Configuration;
 import org.apache.fluss.rpc.RpcGatewayService;
-import org.apache.fluss.rpc.gateway.TabletServerGateway;
 import org.apache.fluss.rpc.netty.server.RequestChannel;
 import org.apache.fluss.rpc.netty.server.RequestHandler;
 import org.apache.fluss.rpc.protocol.NetworkProtocolPlugin;
@@ -61,11 +60,6 @@ public class KafkaProtocolPlugin implements NetworkProtocolPlugin {
 
     @Override
     public RequestHandler<?> createRequestHandler(RpcGatewayService service) {
-        if (!(service instanceof TabletServerGateway)) {
-            throw new IllegalArgumentException(
-                    "Kafka protocol endpoints can only be enabled on TabletServers, but the service is "
-                            + service.getClass().getSimpleName());
-        }
-        return new KafkaRequestHandler();
+        return new KafkaRequestHandler(conf, service);
     }
 }
