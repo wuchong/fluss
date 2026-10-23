@@ -17,6 +17,7 @@
 
 package org.apache.fluss.flink.tiering.source.enumerator;
 
+import org.apache.fluss.client.Connection;
 import org.apache.fluss.client.admin.Admin;
 import org.apache.fluss.client.tiering.TieringLogSplit;
 import org.apache.fluss.client.tiering.TieringSplit;
@@ -29,15 +30,20 @@ import org.apache.fluss.metadata.TableBucket;
 import org.apache.fluss.metadata.TableDescriptor;
 import org.apache.fluss.metadata.TableInfo;
 import org.apache.fluss.metadata.TablePath;
+import org.apache.fluss.rpc.RpcClient;
 import org.apache.fluss.rpc.gateway.CoordinatorGateway;
 import org.apache.fluss.rpc.messages.LakeTieringHeartbeatRequest;
 import org.apache.fluss.rpc.messages.LakeTieringHeartbeatResponse;
 import org.apache.fluss.testutils.common.ManuallyTriggeredScheduledExecutorService;
 import org.apache.fluss.types.DataTypes;
 
+import org.apache.flink.util.FlinkRuntimeException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,8 +55,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /** Tests for split assignment and table scheduling in {@link TieringSourceEnumerator}. */
@@ -223,12 +232,103 @@ class TieringSourceEnumeratorSchedulingTest {
             fixture.requestTable();
             assertThat(fixture.timer.getActiveNonPeriodicScheduledTask()).hasSize(1);
 
-            fixture.enumerator.close();
+            fixture.closeEnumerator();
             // Even if the timer still fires, the closed guard prevents any further claim.
             fixture.fireContinuation();
 
             assertThat(fixture.context.getOneTimeCallables()).isEmpty();
             assertThat(fixture.claims()).hasSize(1);
+        }
+    }
+
+    @ParameterizedTest(name = "withInFlightTable={0}")
+    @ValueSource(booleans = {false, true})
+    void testCloseReportsPendingTables(boolean withInFlightTable) throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            if (withInFlightTable) {
+                // Table 1 produces a split, so it is still in flight when the enumerator closes.
+                fixture.addTable(1, false);
+                fixture.requestTable();
+
+                // Table 2 produces no split. It is marked finished while the heartbeat that
+                // requested it only carried a snapshot taken beforehand, so it is still pending at
+                // close time: both maps have to be reported together in this single heartbeat.
+                fixture.addTable(2, true);
+                fixture.requestTable();
+            } else {
+                // The empty table is marked finished as soon as it produces no splits, but that
+                // completion is only carried back by the delayed continuation poll, which never
+                // runs once the enumerator is closed. Closing has to flush it explicitly,
+                // otherwise the coordinator never learns about it and the table remains in the
+                // Tiering state until the tiering service timeout expires.
+                fixture.addTable(1, true);
+                fixture.requestTable();
+            }
+
+            fixture.closeEnumerator();
+
+            long expectedFinishedTableId = withInFlightTable ? 2L : 1L;
+            long expectedTieringEpoch = expectedFinishedTableId + 100;
+            assertThat(fixture.finishedTableReports())
+                    .singleElement()
+                    .satisfies(
+                            request -> {
+                                assertThat(request.getFinishedTablesList())
+                                        .singleElement()
+                                        .extracting(
+                                                table -> table.getTableId(),
+                                                table -> table.getTieringEpoch())
+                                        .containsExactly(
+                                                expectedFinishedTableId, expectedTieringEpoch);
+                                if (withInFlightTable) {
+                                    assertThat(request.getFailedTablesList())
+                                            .singleElement()
+                                            .extracting(
+                                                    table -> table.getTableId(),
+                                                    table -> table.getTieringEpoch())
+                                            .containsExactly(1L, 101L);
+                                } else {
+                                    assertThat(request.getFailedTablesList()).isEmpty();
+                                }
+                            });
+
+            // A repeated close is a no-op: it must not send a second heartbeat.
+            int heartbeatCount = fixture.heartbeatCount();
+            fixture.closeEnumerator();
+            assertThat(fixture.heartbeatCount()).isEqualTo(heartbeatCount);
+        }
+    }
+
+    @Test
+    void testCloseReleasesResourcesWhenHeartbeatFails() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            fixture.addTable(1, true);
+            fixture.requestTable();
+            RpcClient rpcClient = mock(RpcClient.class);
+            Connection connection = mock(Connection.class);
+            Field rpcClientField = TieringSourceEnumerator.class.getDeclaredField("rpcClient");
+            rpcClientField.setAccessible(true);
+            rpcClientField.set(fixture.enumerator, rpcClient);
+            Field connectionField = TieringSourceEnumerator.class.getDeclaredField("connection");
+            connectionField.setAccessible(true);
+            connectionField.set(fixture.enumerator, connection);
+            IOException failure = new IOException("coordinator unavailable");
+            CompletableFuture<LakeTieringHeartbeatResponse> response = new CompletableFuture<>();
+            response.completeExceptionally(failure);
+            fixture.respondWith(response);
+
+            assertThatThrownBy(fixture::closeEnumerator)
+                    .isInstanceOf(FlinkRuntimeException.class)
+                    .hasRootCause(failure);
+
+            // A repeated close is a no-op: no further heartbeat, and the resources are released
+            // once (the verifications below use the default times(1)).
+            int heartbeatCount = fixture.heartbeatCount();
+            fixture.closeEnumerator();
+            assertThat(fixture.heartbeatCount()).isEqualTo(heartbeatCount);
+            verify(rpcClient).close();
+            verify(fixture.admin).close();
+            verify(connection).close();
         }
     }
 
@@ -242,6 +342,7 @@ class TieringSourceEnumeratorSchedulingTest {
         private final ManuallyTriggeredScheduledExecutorService timer =
                 new ManuallyTriggeredScheduledExecutorService();
         private final Admin admin = mock(Admin.class);
+        private final CoordinatorGateway gateway = mock(CoordinatorGateway.class);
         private final TieringSplitGenerator generator = mock(TieringSplitGenerator.class);
         private final Queue<LakeTieringHeartbeatResponse> tables = new ArrayDeque<>();
         private final List<LakeTieringHeartbeatRequest> requests = new ArrayList<>();
@@ -253,7 +354,6 @@ class TieringSourceEnumeratorSchedulingTest {
 
         private Fixture(int parallelism) {
             this.context = new TestingContext(parallelism);
-            CoordinatorGateway gateway = mock(CoordinatorGateway.class);
             when(gateway.lakeTieringHeartbeat(any()))
                     .thenAnswer(invocation -> respondToHeartbeat(invocation.getArgument(0)));
             enumerator =
@@ -320,6 +420,12 @@ class TieringSourceEnumeratorSchedulingTest {
                     .collect(Collectors.toList());
         }
 
+        private List<LakeTieringHeartbeatRequest> finishedTableReports() {
+            return requests.stream()
+                    .filter(request -> !request.getFinishedTablesList().isEmpty())
+                    .collect(Collectors.toList());
+        }
+
         private void fireContinuation() {
             assertThat(timer.getActiveNonPeriodicScheduledTask()).hasSize(1);
             assertThat(context.getOneTimeCallables()).isEmpty();
@@ -335,8 +441,28 @@ class TieringSourceEnumeratorSchedulingTest {
             context.runNextOneTimeCallable();
         }
 
+        private void respondWith(CompletableFuture<LakeTieringHeartbeatResponse> response) {
+            doAnswer(
+                            invocation -> {
+                                requests.add(invocation.getArgument(0));
+                                return response;
+                            })
+                    .when(gateway)
+                    .lakeTieringHeartbeat(any());
+        }
+
+        private int heartbeatCount() {
+            return requests.size();
+        }
+
+        private void closeEnumerator() throws IOException {
+            enumerator.close();
+        }
+
         @Override
         public void close() throws Exception {
+            // close() is idempotent, so calling it again for tests that already closed the
+            // enumerator reports nothing and releases nothing.
             enumerator.close();
             context.close();
         }
