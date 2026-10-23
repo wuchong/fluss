@@ -187,6 +187,7 @@ import org.apache.fluss.server.kv.snapshot.CompletedSnapshot;
 import org.apache.fluss.server.kv.snapshot.CompletedSnapshotJsonSerde;
 import org.apache.fluss.server.metadata.CoordinatorMetadataCache;
 import org.apache.fluss.server.metadata.CoordinatorMetadataProvider;
+import org.apache.fluss.server.metadata.SystemTables;
 import org.apache.fluss.server.utils.ServerRpcMessageUtils;
 import org.apache.fluss.server.zk.ZooKeeperClient;
 import org.apache.fluss.server.zk.ZooKeeperClient.TableBucketAndManifest;
@@ -495,7 +496,9 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
     public CompletableFuture<CreateTableResponse> createTable(CreateTableRequest request) {
         TablePath tablePath = toTablePath(request.getTablePath());
         tablePath.validate();
+        Session session = currentSession();
         authorizeDatabase(OperationType.CREATE, tablePath.getDatabaseName());
+        validateSystemTableCreationCaller(tablePath, session);
 
         TableDescriptor tableDescriptor;
         try {
@@ -532,6 +535,8 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
         } else if (authorizer != null) {
             authorizer.authorize(currentSession(), OperationType.CREATE, Resource.cluster());
         }
+        validateSystemTableCreationCaller(tablePath, currentSession());
+
         LakeCatalogDynamicLoader.LakeCatalogContainer lakeCatalogContainer =
                 lakeCatalogDynamicLoader.getLakeCatalogContainer();
         if (!lakeCatalogContainer.isClusterDataLakeTableEnabled()
@@ -587,7 +592,7 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
         validateTableCreationPermission(tableDescriptor, tablePath);
 
         // apply system defaults if the config is not set
-        tableDescriptor = applySystemDefaults(tableDescriptor, lakeCatalogContainer);
+        tableDescriptor = applySystemDefaults(tablePath, tableDescriptor, lakeCatalogContainer);
 
         // validate table descriptor before creating table in lake or fluss metadata,
         // to avoid orphaned lake tables when validation fails
@@ -995,6 +1000,7 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
     }
 
     private TableDescriptor applySystemDefaults(
+            TablePath tablePath,
             TableDescriptor tableDescriptor,
             LakeCatalogDynamicLoader.LakeCatalogContainer lakeCatalogContainer) {
         DataLakeFormat dataLakeFormat = lakeCatalogContainer.getDataLakeFormat();
@@ -1024,8 +1030,12 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
             newDescriptor = newDescriptor.withProperties(newProperties);
         }
 
-        // override the datalake format if the table hasn't set it and the cluster configured
+        // Override the data lake format if the table hasn't set it and the cluster configured.
+        // System tables must not inherit the cluster data lake format. In particular, the
+        // consumer-offset table must retain standard Fluss KV bucketing so that GroupManager
+        // owner routing remains consistent with the bucket assignment of offset records.
         if (dataLakeFormat != null
+                && !SystemTables.isSystemTable(tablePath)
                 && !properties.containsKey(ConfigOptions.TABLE_DATALAKE_FORMAT.key())) {
             newDescriptor = newDescriptor.withDataLakeFormat(dataLakeFormat);
         }
@@ -1965,6 +1975,10 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
      */
     private void validateTableCreationPermission(
             TableDescriptor tableDescriptor, TablePath tablePath) {
+        if (SystemTables.isSystemTable(tablePath)) {
+            return;
+        }
+
         boolean hasPrimaryKey = tableDescriptor.hasPrimaryKey();
 
         if (hasPrimaryKey) {
@@ -1979,6 +1993,13 @@ public final class CoordinatorService extends RpcServiceBase implements Coordina
                 throw new InvalidTableException(
                         "Creation of Log Tables is disallowed in the cluster.");
             }
+        }
+    }
+
+    private void validateSystemTableCreationCaller(TablePath tablePath, Session session) {
+        if (SystemTables.isSystemTable(tablePath) && !session.isInternal()) {
+            throw new InvalidTableException(
+                    String.format("System table %s can only be created internally.", tablePath));
         }
     }
 
