@@ -30,7 +30,7 @@
     <packaging>jar</packaging>
 
     <artifactId>fluss-spark-tiering_${scala.binary.version}</artifactId>
-    <name>Fluss : Engine Spark : Tiering</name>
+    <name>Apache Fluss : Engine Spark : Tiering</name>
 
     <dependencies>
         <dependency>
